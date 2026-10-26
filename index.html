@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social Hub</title>
+<style>
+  :root{
+    color-scheme:light;
+    --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s1-soft:#9ec5f4; --s2:#eb6834; --s3:#1baf7a; --good:#006300; --bad:#d03b3b; --accent:#2a78d6;
+    --fb:#1877f2; --ig:#d62976; --tt:#111;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+    --s1:#3987e5; --s1-soft:#1c5cab; --s2:#d95926; --s3:#199e70; --good:#0ca30c; --bad:#e66767; --accent:#3987e5; --tt:#eee;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:18px 16px 48px}
+  header{max-width:1200px;margin:0 auto 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  h1{font-size:1.35rem;margin:0}
+  .sub{color:var(--ink2);font-size:.85rem}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button,a.btn{font:inherit;padding:7px 13px;border-radius:8px;border:1px solid var(--ring);background:var(--surface);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  button.on,a.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.ghost{background:transparent}
+  main{max-width:1200px;margin:0 auto;display:grid;gap:14px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .tile{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:11px 13px;min-width:0}
+  .tile .k{color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;display:flex;gap:6px;align-items:center}
+  .tile .v{font-size:1.45rem;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .d{font-size:.78rem;color:var(--ink2)} .d.up{color:var(--good)} .d.down{color:var(--bad)}
+  .card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:14px;min-width:0}
+  .card h2{font-size:.95rem;margin:0 0 10px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .card h2 small{font-weight:400;color:var(--muted);font-size:.78rem}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  svg{width:100%;height:auto;display:block}
+  .bar{fill:var(--s1)} .bar.b2{fill:var(--s3)} .bar:hover{opacity:.75}
+  .gridline{stroke:var(--grid);stroke-width:1} .axis{stroke:var(--axis);stroke-width:1}
+  .lbl{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+  .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);padding:7px 10px;border-radius:7px;font-size:.8rem;line-height:1.4;display:none;z-index:99;white-space:nowrap;max-width:260px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .tip.wrap{white-space:normal}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--grid);vertical-align:top}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.tot td{font-weight:700;border-top:2px solid var(--grid)}
+  .scroll{overflow-x:auto}
+  .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.72rem;border:1px solid var(--ring);color:var(--ink2);white-space:nowrap}
+  .pill.ok{color:var(--good);border-color:var(--good)} .pill.err{color:var(--bad);border-color:var(--bad)}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .dot.ld{background:var(--s3)}
+  .ldt td.deliv{color:var(--good);font-weight:700} .ldt td.lost{color:var(--bad)} .ldt tr.tot td{font-weight:700;border-top:2px solid var(--ring)}
+  .ldbar{display:inline-block;width:60px;height:7px;border-radius:9px;background:var(--grid);vertical-align:middle;margin-right:6px;overflow:hidden} .ldbar i{display:block;height:100%;background:var(--s3)}
+  .dot.fb{background:var(--fb)} .dot.ig{background:var(--ig)} .dot.tt{background:var(--tt)} .dot.ads{background:var(--s2)}
+  .post{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--grid);align-items:start}
+  .post:last-child{border-bottom:0}
+  .post img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--grid)}
+  .post .t{color:var(--muted);font-size:.78rem} .post .c{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .hint{color:var(--muted);font-size:.8rem} .err{color:var(--bad);font-size:.85rem}
+  .setup{display:grid;gap:8px;max-width:560px}
+  .setup input{width:100%;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--ring);background:var(--surface);color:var(--ink)}
+  .setup label{color:var(--ink2);font-size:.85rem}
+  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font:700 10px/1 system-ui,sans-serif;background:transparent;padding:0;cursor:help;vertical-align:middle;flex:none;text-transform:none;letter-spacing:0}
+  .info:hover,.info:focus{border-color:var(--ink);color:var(--ink);outline:none}
+  .chart{position:relative}
+  .area{fill:url(#gradBlue)} .area.g{fill:url(#gradGreen)} .area.o{fill:url(#gradOrange)}
+  .line{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round} .line.g{stroke:var(--s3)} .line.o{stroke:var(--s2)}
+  .pt{fill:var(--surface);stroke:var(--s1);stroke-width:2} .pt.g{stroke:var(--s3)} .pt.o{stroke:var(--s2)}
+  .xhair{stroke:var(--axis);stroke-width:1;stroke-dasharray:3 3}
+  .lastv{fill:var(--ink);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+  .chart .sum{display:flex;gap:14px;font-size:.78rem;color:var(--ink2);margin:-2px 0 8px;flex-wrap:wrap}
+  .chart .sum b{color:var(--ink);font-weight:600}
+  th .info{margin-left:4px}
+  img.th{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--grid);display:block}
+  select{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--ring);background:var(--surface);color:var(--ink)}
+  .pf{font-size:.7rem;padding:1px 7px;border-radius:99px;color:#fff;white-space:nowrap} .pf.fb{background:var(--fb)} .pf.ig{background:var(--ig)} .pf.tt{background:var(--tt);color:var(--page)}
+  .cm{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--grid)} .cm:last-child{border-bottom:0} .cm.done{opacity:.72}
+  .cm .who{font-weight:600} .cm .when{color:var(--muted);font-size:.78rem} .cm .txt{margin:2px 0 6px;white-space:pre-wrap;word-break:break-word}
+  .cm .reply{margin:2px 0 6px 10px;padding-left:8px;border-left:2px solid var(--grid);font-size:.85rem;color:var(--ink2)}
+  .cm .rep{display:flex;gap:6px} .cm .rep input{flex:1;min-width:0;font:inherit;padding:6px 9px;border-radius:8px;border:1px solid var(--ring);background:var(--surface);color:var(--ink)}
+  .cm .rep button{padding:6px 12px} .cm .err:empty{display:none}
+  .cm .rep button.on{background:var(--good);border-color:var(--good)} .cm .rep button.wait{opacity:.6;cursor:wait}
+  /* messages inbox: one row per conversation, tap to open the thread */
+  .th{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--grid);cursor:pointer;align-items:start} .th:last-child{border-bottom:0}
+  .th .who{font-weight:600} .th .when{color:var(--muted);font-size:.78rem;white-space:nowrap} .th .snip{color:var(--ink2);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .th.wait .snip{color:var(--ink);font-weight:500} .th .n{background:var(--bad);color:#fff;border-radius:99px;font-size:.7rem;padding:1px 7px;margin-left:6px}
+  .th.open{cursor:default;background:var(--surface2,transparent)} .th .body{grid-column:1/-1;display:none} .th.open .body{display:block}
+  .bub{max-width:82%;padding:7px 11px;border-radius:14px;margin:4px 0;white-space:pre-wrap;word-break:break-word;font-size:.9rem;background:var(--surface);border:1px solid var(--grid)}
+  .bub.me{margin-left:auto;background:var(--good);border-color:var(--good);color:#fff} .bub .t{display:block;font-size:.7rem;opacity:.7;margin-top:2px} .bub img{max-width:200px;border-radius:8px;display:block;margin-top:4px}
+  .th .rep{display:flex;gap:6px;margin-top:8px} .th .rep input{flex:1;min-width:0;font:inherit;padding:6px 9px;border-radius:8px;border:1px solid var(--ring);background:var(--surface);color:var(--ink)}
+  .th .rep button{padding:6px 12px} .th .rep button.on{background:var(--good);border-color:var(--good)} .th .rep button.wait{opacity:.6;cursor:wait} .th .err:empty{display:none}
+  [hidden]{display:none!important}
+  /* platform tabs */
+  .tabs{max-width:1200px;margin:0 auto 14px;display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--grid);scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:9px 13px;color:var(--ink2);white-space:nowrap;margin-bottom:-1px}
+  .tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+  .tabs button .dot{margin-right:6px}
+  .tab[hidden]{display:none}
+  /* horizontal bar rows for breakdowns */
+  .bars{display:grid;gap:7px}
+  .bars .r{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:10px;align-items:center;font-size:.85rem}
+  .bars .r .l{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bars .r .b{height:9px;border-radius:99px;background:var(--grid);overflow:hidden}
+  .bars .r .b i{display:block;height:100%;background:var(--s1);border-radius:99px}
+  .bars.fb .r .b i{background:var(--fb)} .bars.ig .r .b i{background:var(--ig)} .bars.tt .r .b i{background:var(--tt)} .bars.ads .r .b i{background:var(--s2)} .bars.g .r .b i{background:var(--s3)}
+  .bars .r .v{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right} .bars .r .v small{color:var(--muted)}
+  .funnel .r{grid-template-columns:minmax(120px,200px) 1fr auto}
+  .card h2 .row{font-weight:400}
+  .stack{display:grid;gap:14px}
+  @media (max-width:520px){ .tile .v{font-size:1.2rem} .bars .r{grid-template-columns:90px 1fr auto} }
+  /* custom date range (boss, 21 Oct 2026) */
+  .rangepick{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .rangepick input{font:inherit;font-size:12.5px;padding:6px 8px;border:1px solid rgba(127,127,127,.45);border-radius:8px;background:transparent;color:inherit;color-scheme:dark;max-width:150px}
+  .rangepick.on input{border-color:currentColor}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Social Hub</h1><div class="sub" id="status">Connecting…</div></div>
+  <div class="row">
+    <span class="row" id="ranges">
+      <button data-r="7" class="on">7 days</button><button data-r="14">14 days</button><button data-r="30">30 days</button>
+      <span class="rangepick" title="Pick any dates (Facebook, Instagram and Ads tabs)"><input type="date" id="rFrom" aria-label="From date"><span>→</span><input type="date" id="rTo" aria-label="To date"><button type="button" id="rGo">Show</button></span>
+    </span>
+    <a class="btn primary" id="btnCreate" data-pz target="_blank" rel="noopener">＋ Create post</a>
+    <a class="btn" id="btnPostiz" data-pz target="_blank" rel="noopener">Open Postiz</a>
+    <button class="ghost" id="refresh" title="Reload">↻</button>
+    <button class="ghost" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="overview" class="on">Overview</button>
+  <button data-tab="facebook"><span class="dot fb"></span>Facebook</button>
+  <button data-tab="instagram"><span class="dot ig"></span>Instagram</button>
+  <button data-tab="tiktok" data-pz><span class="dot tt"></span>TikTok</button>
+  <button data-tab="ads"><span class="dot ads"></span>Ads</button>
+</nav>
+
+<main>
+  <section class="card" id="setup" hidden>
+    <h2>Connections</h2>
+    <div class="setup">
+      <label data-pz>Postiz URL</label><input data-pz id="pzUrl" placeholder="">
+      <label data-pz>Postiz public API key <span class="hint">(Postiz → Settings → Public API)</span></label><input data-pz id="pzKey" type="password" autocomplete="off">
+      <label>Meta ad account</label><select id="acct"><option value="">— connect Facebook first —</option></select>
+      <label>Facebook Page</label><select id="pageSel"><option value="">— connect Facebook first —</option></select>
+      <label>Meta permanent token <span class="hint">(optional — a Business Settings "system user" token; replaces the Facebook login for good)</span></label><input id="fbPerm" type="password" autocomplete="off" placeholder="paste token, then Save">
+      <div class="row"><button class="on" id="save">Save</button><button id="fbLogin">Connect Facebook</button><button class="ghost" id="fbLogout">Disconnect Facebook</button></div>
+      <p class="hint">Settings stay in this browser only. Facebook access is a normal Facebook login and stays valid for about 2 months; the page will tell you when to reconnect.</p>
+      <p class="err" id="setupErr"></p>
+    </div>
+  </section>
+
+  <div class="tab stack" data-tab="overview">
+  <div class="tiles" id="kpis"></div>
+
+  <div class="grid2" data-pz>
+    <section class="card"><h2>Upcoming posts <small id="upTitle"></small></h2><div id="upcoming" class="hint">—</div></section>
+    <section class="card"><h2>Recently published <small id="recTitle"></small></h2><div id="recent" class="hint">—</div></section>
+  </div>
+
+  <div class="grid2">
+    <section class="card"><h2><span><span class="dot ads"></span> Ad spend per day (RM) <button class="info" type="button" data-tip="What Meta charged for your ads each day." aria-label="What is this?">!</button></span></h2><div id="cSpend"></div></section>
+    <section class="card"><h2><span><span class="dot fb"></span> Facebook engagement per day <button class="info" type="button" data-tip="Reactions + comments + shares + clicks on Page posts, per day." aria-label="What is this?">!</button></span></h2><div id="cFb"></div></section>
+  </div>
+  <div class="grid2">
+    <section class="card"><h2><span><span class="dot ig"></span> Instagram reach per day <button class="info" type="button" data-tip="Different accounts that saw any post, reel or story that day." aria-label="What is this?">!</button></span></h2><div id="cIg"></div></section>
+    <section class="card" data-pz><h2>Channels</h2><div id="channels" class="hint">—</div></section>
+  </div>
+
+  <section class="card"><h2><span>Posts <small id="postsTitle"></small> <button class="info" type="button" data-tip="Every Facebook Page post and Instagram post/reel published in the period, with its own numbers straight from Meta." aria-label="What is this?">!</button></span>
+    <span class="row"><select id="postsPf"><option value="">All platforms</option><option value="fb">Facebook</option><option value="ig">Instagram</option></select><select id="postsSort"><option value="date">Newest first</option><option value="reach">Most reach / views</option><option value="eng">Most engagement</option><option value="comments">Most comments</option></select></span></h2>
+    <div id="postsNote" class="err"></div>
+    <div class="scroll"><table id="posts"><thead><tr><th></th><th>Post</th>
+      <th class="n">Reach<button class="info" type="button" data-tip="Different accounts that saw this post (Instagram only — Meta no longer reports reach per Facebook post)." aria-label="What is this?">!</button></th>
+      <th class="n">Views<button class="info" type="button" data-tip="Times the post/reel/video was viewed." aria-label="What is this?">!</button></th>
+      <th class="n">Likes<button class="info" type="button" data-tip="Reactions on Facebook, likes on Instagram." aria-label="What is this?">!</button></th>
+      <th class="n">Comments<button class="info" type="button" data-tip="Open comments (nobody replied, not ignored) / total comments on the post." aria-label="What is this?">!</button></th><th class="n">Shares</th>
+      <th class="n">Saves / Clicks<button class="info" type="button" data-tip="Instagram: how many people saved the post. Facebook: clicks anywhere on the post." aria-label="What is this?">!</button></th><th></th>
+    </tr></thead><tbody><tr><td colspan="9" class="hint">—</td></tr></tbody></table></div>
+  </section>
+
+  <section class="card"><h2><span>Comments inbox <small class="cmTitle"></small> <button class="info" type="button" data-tip="Customer comments on the posts above. Reply here and it is posted from the Page / Instagram account." aria-label="What is this?">!</button></span>
+    <label class="hint row" style="cursor:pointer"><input type="checkbox" class="cmUnr" checked> unreplied only</label></h2>
+    <div id="cmNote" class="err"></div>
+    <div id="comments" class="cmlist hint" data-pf="">—</div>
+  </section>
+
+  <section class="card"><h2><span>Messages inbox <small class="msgTitle"></small> <button class="info" type="button" data-tip="Messenger and Instagram DMs to the Page. Tap a conversation to read it and reply as the Page. Meta only lets a Page reply within 24 hours of the customer's last message — after that, reply from the Meta Business Suite app." aria-label="What is this?">!</button></span>
+    <span class="row"><label class="hint row" style="cursor:pointer"><input type="checkbox" class="msgWait" checked> needs reply only</label> <button class="ghost clrMsg" type="button" data-pf="" title="Hide every conversation currently in the inbox and start fresh (Messenger + Instagram). New messages still appear.">Clear inbox</button> <button class="ghost" id="msgReload" type="button" title="Check for new messages">↻</button> <a class="btn" href="https://business.facebook.com/latest/inbox/all" target="_blank" rel="noopener">Business Suite</a></span></h2>
+    <div id="msgNote" class="err"></div>
+    <div id="messages" class="msglist hint" data-pf="">—</div>
+  </section>
+
+  <section class="card" data-pz><h2><span><span class="dot tt"></span> TikTok the account <small>via Postiz</small></span><a class="btn" href="https://www.tiktok.com/tiktokstudio/analytics" target="_blank" rel="noopener">TikTok Studio</a></h2><div id="tiktok" class="hint">—</div></section>
+
+  <section class="card"><h2><span><span class="dot ads"></span> Campaigns</span></h2><div class="scroll"><table id="camps"><thead><tr>
+    <th>Campaign</th><th>Status</th><th class="n">Spend<button class="info" type="button" data-tip="Money Meta charged for this campaign in the period." aria-label="What is this?">!</button></th><th class="n">Reach<button class="info" type="button" data-tip="Different people who saw the ad at least once." aria-label="What is this?">!</button></th><th class="n">Link clicks<button class="info" type="button" data-tip="Clicks on the ad link or button (likes and comments not counted)." aria-label="What is this?">!</button></th><th class="n">CPC<button class="info" type="button" data-tip="Cost per link click = spend ÷ link clicks." aria-label="What is this?">!</button></th><th class="n">Results<button class="info" type="button" data-tip="The action the campaign is optimised for — here: people who started a message conversation." aria-label="What is this?">!</button></th><th class="n">Cost/result<button class="info" type="button" data-tip="Spend ÷ results. Lower is better." aria-label="What is this?">!</button></th>
+  </tr></thead><tbody></tbody></table></div>
+</section>
+  </div><!-- /overview -->
+
+  <!-- ================= Facebook ================= -->
+  <div class="tab stack" data-tab="facebook" hidden>
+    <div class="tiles" id="fbKpis"><div class="tile"><div class="k">Facebook</div><div class="d">Loading…</div></div></div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot fb"></span> Post engagements per day <button class="info" type="button" data-tip="Reactions + comments + shares + clicks on Page posts each day." aria-label="What is this?">!</button></span></h2><div id="fbC1"></div></section>
+      <section class="card"><h2><span><span class="dot fb"></span> Video views per day <button class="info" type="button" data-tip="Times videos and reels on the Page were played for at least 3 seconds (organic + paid)." aria-label="What is this?">!</button></span></h2><div id="fbC2"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot fb"></span> Page views per day <button class="info" type="button" data-tip="Times the Page profile itself was opened." aria-label="What is this?">!</button></span></h2><div id="fbC3"></div></section>
+      <section class="card"><h2><span><span class="dot fb"></span> New followers per day <button class="info" type="button" data-tip="People who followed the Page that day (unfollows shown in the summary line)." aria-label="What is this?">!</button></span></h2><div id="fbC4"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot fb"></span> Video <button class="info" type="button" data-tip="How your Page videos and reels were watched in the period. Organic = free; paid = from ads." aria-label="What is this?">!</button></span></h2><div id="fbVid" class="hint">—</div></section>
+      <section class="card"><h2><span><span class="dot fb"></span> Reactions <button class="info" type="button" data-tip="Which reactions people gave to Page posts in the period." aria-label="What is this?">!</button></span></h2><div id="fbReact" class="hint">—</div></section>
+    </div>
+    <section class="card"><h2><span>Facebook posts <small id="fbPostsTitle"></small> <button class="info" type="button" data-tip="Every Page post published in the period with its own numbers from Meta. Views = times the post's photo/video was shown; video columns are only for videos and reels." aria-label="What is this?">!</button></span>
+      <span class="row"><select id="fbSort"><option value="date">Newest first</option><option value="views">Most views</option><option value="eng">Most engagement</option><option value="comments">Most comments</option><option value="clicks">Most clicks</option></select></span></h2>
+      <div class="scroll"><table id="fbPosts"><thead><tr><th></th><th>Post</th>
+        <th class="n">Views<button class="info" type="button" data-tip="Times the post's photo or video was shown." aria-label="What is this?">!</button></th>
+        <th class="n">Video views<button class="info" type="button" data-tip="Plays of 3 seconds or more (videos and reels only)." aria-label="What is this?">!</button></th>
+        <th class="n">30s views<button class="info" type="button" data-tip="Plays that lasted 30 seconds or to the end — people who actually watched." aria-label="What is this?">!</button></th>
+        <th class="n">Avg watch<button class="info" type="button" data-tip="Average seconds a viewer watched the video." aria-label="What is this?">!</button></th>
+        <th class="n">Reactions</th><th class="n">Comments<button class="info" type="button" data-tip="Open comments (nobody replied) / total comments." aria-label="What is this?">!</button></th><th class="n">Shares</th>
+        <th class="n">Clicks<button class="info" type="button" data-tip="Clicks anywhere on the post (photo, link, see more…)." aria-label="What is this?">!</button></th><th></th>
+      </tr></thead><tbody><tr><td colspan="11" class="hint">—</td></tr></tbody></table></div>
+    </section>
+    <section class="card"><h2><span>Facebook comments <small class="cmTitle"></small></span><label class="hint row" style="cursor:pointer"><input type="checkbox" class="cmUnr" checked> unreplied only</label></h2><div class="cmlist hint" data-pf="fb">—</div></section>
+    <section class="card"><h2><span>Messenger <small class="msgTitle"></small> <button class="info" type="button" data-tip="Messenger conversations with the Page. Tap one to read and reply. Meta only lets a Page reply within 24 hours of the customer's last message." aria-label="What is this?">!</button></span><span class="row"><label class="hint row" style="cursor:pointer"><input type="checkbox" class="msgWait" checked> needs reply only</label> <button class="ghost clrMsg" type="button" data-pf="fb" title="Hide every Messenger conversation currently in the inbox and start fresh. New messages still appear.">Clear inbox</button></span></h2><div class="msglist hint" data-pf="fb">—</div></section>
+  </div>
+
+  <!-- ================= Instagram ================= -->
+  <div class="tab stack" data-tab="instagram" hidden>
+    <div class="tiles" id="igKpis"><div class="tile"><div class="k">Instagram</div><div class="d">Loading…</div></div></div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ig"></span> Reach per day <button class="info" type="button" data-tip="Different accounts that saw any post, reel, story or ad that day." aria-label="What is this?">!</button></span></h2><div id="igC1"></div></section>
+      <section class="card"><h2><span><span class="dot ig"></span> Views per day <button class="info" type="button" data-tip="Times your reels, posts and stories were played or displayed." aria-label="What is this?">!</button></span></h2><div id="igC2"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ig"></span> Interactions per day <button class="info" type="button" data-tip="Likes + comments + shares + saves per day." aria-label="What is this?">!</button></span></h2><div id="igC3"></div></section>
+      <section class="card"><h2><span><span class="dot ig"></span> Profile views per day <button class="info" type="button" data-tip="Times someone opened the the account profile — a sign they wanted to know more." aria-label="What is this?">!</button></span></h2><div id="igC4"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ig"></span> By content type <button class="info" type="button" data-tip="Where views, reach and interactions came from: reels, feed posts, carousels, stories or ads." aria-label="What is this?">!</button></span></h2><div id="igType" class="hint">—</div></section>
+      <section class="card"><h2><span><span class="dot ig"></span> Followers vs new people <button class="info" type="button" data-tip="How much of your views and reach came from people who already follow you versus people who don't." aria-label="What is this?">!</button></span></h2><div id="igFollow" class="hint">—</div></section>
+    </div>
+    <section class="card"><h2><span>Instagram posts &amp; reels <small id="igPostsTitle"></small></span>
+      <span class="row"><select id="igSort"><option value="date">Newest first</option><option value="views">Most views</option><option value="reach">Most reach</option><option value="eng">Most engagement</option><option value="comments">Most comments</option></select></span></h2>
+      <div class="scroll"><table id="igPosts"><thead><tr><th></th><th>Post</th>
+        <th class="n">Reach</th><th class="n">Views</th><th class="n">Likes</th><th class="n">Comments<button class="info" type="button" data-tip="Open comments (nobody replied) / total comments." aria-label="What is this?">!</button></th><th class="n">Shares</th><th class="n">Saves</th>
+        <th class="n">Avg watch<button class="info" type="button" data-tip="Average seconds a viewer watched the reel." aria-label="What is this?">!</button></th><th></th>
+      </tr></thead><tbody><tr><td colspan="10" class="hint">—</td></tr></tbody></table></div>
+    </section>
+    <section class="card"><h2><span>Instagram comments <small class="cmTitle"></small></span><label class="hint row" style="cursor:pointer"><input type="checkbox" class="cmUnr" checked> unreplied only</label></h2><div class="cmlist hint" data-pf="ig">—</div></section>
+    <section class="card"><h2><span>Instagram DMs <small class="msgTitle"></small></span><span class="row"><label class="hint row" style="cursor:pointer"><input type="checkbox" class="msgWait" checked> needs reply only</label> <button class="ghost clrMsg" type="button" data-pf="ig" title="Hide every Instagram DM currently in the inbox and start fresh. New messages still appear.">Clear inbox</button></span></h2><div class="msglist hint" data-pf="ig">—</div></section>
+  </div>
+
+  <!-- ================= TikTok ================= -->
+  <div class="tab stack" data-tab="tiktok" data-pz hidden>
+    <div class="tiles" id="ttKpis"><div class="tile"><div class="k">TikTok</div><div class="d">Loading…</div></div></div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot tt"></span> Followers over time <button class="info" type="button" data-tip="TikTok only reports today's totals, so the hub saves a snapshot each day it is opened and draws the trend from those. History starts the first day the hub was opened on this device." aria-label="What is this?">!</button></span></h2><div id="ttC1"></div></section>
+      <section class="card"><h2><span><span class="dot tt"></span> Views · recent videos over time</span></h2><div id="ttC2"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot tt"></span> Total likes over time</span></h2><div id="ttC3"></div></section>
+      <section class="card"><h2><span><span class="dot tt"></span> Videos over time</span></h2><div id="ttC4"></div></section>
+    </div>
+    <section class="card"><h2><span><span class="dot tt"></span> Changes since snapshots <button class="info" type="button" data-tip="Difference between today's TikTok totals and the earliest snapshot inside the selected range." aria-label="What is this?">!</button></span><a class="btn" href="https://www.tiktok.com/tiktokstudio/analytics" target="_blank" rel="noopener">TikTok Studio</a></h2><div id="ttDelta" class="hint">—</div></section>
+    <section class="card"><h2><span>TikTok posts via Postiz <small id="ttPostsTitle"></small></span></h2><div id="ttPosts" class="hint">—</div>
+      <p class="hint" style="margin:8px 0 0">TikTok's API does not give this app per-video numbers or comments — open TikTok Studio for those and reply to comments in the TikTok app.</p></section>
+  </div>
+
+  <!-- ================= Ads ================= -->
+  <div class="tab stack" data-tab="ads" hidden>
+    <div class="tiles" id="adKpis"><div class="tile"><div class="k">Ads</div><div class="d">Loading…</div></div></div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ads"></span> Spend per day (RM)</span></h2><div id="adC1"></div></section>
+      <section class="card"><h2><span><span class="dot ads"></span> Results per day <button class="info" type="button" data-tip="Message conversations started from the ads each day (or leads / purchases for campaigns with those goals)." aria-label="What is this?">!</button></span></h2><div id="adC2"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ads"></span> Link clicks per day</span></h2><div id="adC3"></div></section>
+      <section class="card"><h2><span><span class="dot ads"></span> Reach per day <button class="info" type="button" data-tip="Different people who saw an ad that day." aria-label="What is this?">!</button></span></h2><div id="adC4"></div></section>
+    </div>
+    <section class="card"><h2><span><span class="dot ads"></span> Messaging funnel <button class="info" type="button" data-tip="What happened after people tapped the ad: opened a chat → sent a first message → the Page replied → kept chatting. Each step is people, not messages." aria-label="What is this?">!</button></span></h2><div id="adFunnel" class="hint">—</div></section>
+    <section class="card"><h2><span><span class="dot ads"></span> Campaigns</span></h2><div class="scroll"><table id="adCamps"><thead><tr>
+      <th>Campaign</th><th>Status</th><th class="n">Spend</th><th class="n">Reach</th><th class="n">Impressions<button class="info" type="button" data-tip="Times an ad was shown (one person can see it several times)." aria-label="What is this?">!</button></th><th class="n">Freq.<button class="info" type="button" data-tip="Average times each person saw the ad = impressions ÷ reach. Above ~3 means people are seeing it a lot." aria-label="What is this?">!</button></th><th class="n">CPM<button class="info" type="button" data-tip="Cost per 1,000 impressions." aria-label="What is this?">!</button></th><th class="n">Link clicks</th><th class="n">CTR<button class="info" type="button" data-tip="Link clicks ÷ impressions." aria-label="What is this?">!</button></th><th class="n">CPC</th><th class="n">Results</th><th class="n">Cost/result</th>
+    </tr></thead><tbody><tr><td colspan="12" class="hint">—</td></tr></tbody></table></div></section>
+    <section class="card"><h2><span><span class="dot ads"></span> Ads <button class="info" type="button" data-tip="Each individual ad (creative) inside the campaigns, so you can see which video or picture is doing the work." aria-label="What is this?">!</button></span></h2><div class="scroll"><table id="adAds"><thead><tr>
+      <th>Ad</th><th>Ad set</th><th>Status</th><th class="n">Spend</th><th class="n">Reach</th><th class="n">Impressions</th><th class="n">Link clicks</th><th class="n">CTR</th><th class="n">Results</th><th class="n">Cost/result</th>
+    </tr></thead><tbody><tr><td colspan="10" class="hint">—</td></tr></tbody></table></div></section>
+    <div class="grid2">
+      <section class="card"><h2><span><span class="dot ads"></span> By placement <button class="info" type="button" data-tip="Where the ads were shown (Facebook feed, reels, stories, Instagram…) and what each place delivered." aria-label="What is this?">!</button></span></h2><div class="scroll"><table id="adPlace"><thead><tr><th>Placement</th><th class="n">Spend</th><th class="n">Reach</th><th class="n">Clicks</th><th class="n">Results</th><th class="n">Cost/result</th></tr></thead><tbody><tr><td colspan="6" class="hint">—</td></tr></tbody></table></div></section>
+      <section class="card"><h2><span><span class="dot ads"></span> By age &amp; gender</span></h2><div class="scroll"><table id="adDemo"><thead><tr><th>Age</th><th>Gender</th><th class="n">Spend</th><th class="n">Reach</th><th class="n">Clicks</th><th class="n">Results</th><th class="n">Cost/result</th></tr></thead><tbody><tr><td colspan="7" class="hint">—</td></tr></tbody></table></div></section>
+    </div>
+    <section class="card"><h2><span><span class="dot ads"></span> By region <button class="info" type="button" data-tip="Where the people who saw the ads are (state / area as Meta reports it)." aria-label="What is this?">!</button></span></h2><div class="scroll"><table id="adRegion"><thead><tr><th>Region</th><th class="n">Spend</th><th class="n">Reach</th><th class="n">Clicks</th><th class="n">Results</th><th class="n">Cost/result</th></tr></thead><tbody><tr><td colspan="6" class="hint">—</td></tr></tbody></table></div></section>
+  </div>
+
+  <p class="hint" id="foot"></p>
+</main>
+<div class="tip" id="tip"></div>
+
+<script>
+(function(){
+  const LS='sh_cfg_v1', APP_ID='913924404753648';
+  let FB_PAGE_ID='';   // the Page picked in ⚙ (or the first one this login can see)
+  const FB_SCOPES='pages_show_list,pages_read_engagement,read_insights,instagram_basic,instagram_manage_insights,business_management,ads_read';
+  const $=s=>document.querySelector(s);
+  const fmt=(n,d=0)=>Number(n||0).toLocaleString('en-MY',{maximumFractionDigits:d,minimumFractionDigits:d});
+  const rm=n=>'RM '+fmt(n,2);
+  // Postiz switch: false = Postiz (and the TikTok tab, which only gets its data from Postiz) is unplugged from the hub —
+  // nothing is shown and nothing calls the Postiz server. Saved URL/key stay in this browser, so flipping it back to true restores everything.
+  const POSTIZ_ON=false;
+  if(!POSTIZ_ON) document.querySelectorAll('[data-pz]').forEach(el=>el.remove());
+  let cfg={pzUrl:'',pzKey:'',acct:'',page:''}, days=7, fbToken=null;
+  try{ Object.assign(cfg, JSON.parse(localStorage.getItem(LS)||'{}')) }catch(e){}
+  FB_PAGE_ID=cfg.page||'';
+  if(!cfg.pzUrl) cfg.pzUrl=''; if(cfg.pzKey&&!/^[a-f0-9]{64}$/i.test(cfg.pzKey)) cfg.pzKey='';
+  const saveCfg=()=>{ try{localStorage.setItem(LS,JSON.stringify(cfg))}catch(e){} };
+
+  // ---------- UI wiring ----------
+  if(POSTIZ_ON){ $('#btnPostiz').href=cfg.pzUrl+'/launches'; $('#btnCreate').href=cfg.pzUrl+'/launches'; }
+  $('#settingsBtn').onclick=()=>{ $('#setup').hidden=!$('#setup').hidden; if(POSTIZ_ON){ $('#pzUrl').value=cfg.pzUrl; $('#pzKey').value=cfg.pzKey; } $('#acct').value=cfg.acct; };
+  $('#save').onclick=()=>{ if(POSTIZ_ON){ cfg.pzUrl=($('#pzUrl').value.trim()||'').replace(/\/$/,''); let k=$('#pzKey').value.trim(); if(/^EAA/.test(k)&&!$('#fbPerm').value.trim()){ $('#fbPerm').value=k; k=cfg.pzKey; $('#pzKey').value=k; } if(k&&!/^[a-f0-9]{64}$/i.test(k)){ $('#setupErr').textContent='That does not look like a Postiz API key (it should be 64 letters/numbers from Postiz → Settings → Developers). Check you did not paste the Meta token here.'; return; } $('#setupErr').textContent=''; if(k) cfg.pzKey=k; } cfg.acct=$('#acct').value.trim().replace(/^act_/,''); cfg.page=$('#pageSel').value; FB_PAGE_ID=cfg.page; saveCfg(); const perm=$('#fbPerm').value.trim(); if(perm){ try{localStorage.setItem('em_hub_fb_v1',JSON.stringify({t:perm,exp:Date.now()+3650*864e5,perm:true}))}catch(e){} fbToken=perm; $('#fbPerm').value=''; } if(POSTIZ_ON){ $('#btnPostiz').href=cfg.pzUrl+'/launches'; $('#btnCreate').href=cfg.pzUrl+'/launches'; } $('#setup').hidden=true; loadAll(); };
+  $('#refresh').onclick=()=>loadAll();
+  // tabs: remembered in the URL hash so a refresh / shared link lands on the same tab
+  const TABS=POSTIZ_ON?['overview','facebook','instagram','tiktok','ads']:['overview','facebook','instagram','ads'];
+  function showTab(t){ if(!TABS.includes(t)) t='overview'; document.querySelectorAll('#tabs [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); document.querySelectorAll('main .tab').forEach(d=>d.hidden=d.dataset.tab!==t); if((location.hash.replace('#','')||'overview')!==t) history.replaceState(null,'',t==='overview'?pageUrl():'#'+t); }
+  document.querySelectorAll('#tabs [data-tab]').forEach(b=>b.onclick=()=>{ showTab(b.dataset.tab); window.scrollTo({top:0}); });
+  const syncRangeUi=()=>{ document.querySelectorAll('#ranges [data-r]').forEach(x=>x.classList.toggle('on',!rEnd&&+x.dataset.r===days)); $('.rangepick').classList.toggle('on',!!rEnd||![7,14,30].includes(days));
+    $('#rTo').value=ymd(new Date(endMs())); $('#rFrom').value=ymd(new Date(endMs()-(days-1)*864e5)); $('#rTo').max=$('#rFrom').max=ymd(new Date()); };
+  document.querySelectorAll('#ranges [data-r]').forEach(b=>b.onclick=()=>{ days=+b.dataset.r; rEnd=null; syncRangeUi(); loadAll(); });
+  $('#rGo').onclick=()=>{ const f=$('#rFrom').value, t=$('#rTo').value; if(!f||!t) return;
+    // Instagram only gives up to 30 days of insights per request, so a longer pick is trimmed to the last 30 days of it
+    const today=ymd(new Date()); let [a,z]=[f,t].sort(); if(z>today) z=today; if(a>z) a=z;
+    days=Math.min(30,Math.round((new Date(z+'T00:00:00')-new Date(a+'T00:00:00'))/864e5)+1); rEnd=z===today?null:z; syncRangeUi(); loadAll(); };
+  setTimeout(syncRangeUi,0);
+  const tip=$('#tip');
+  function showInfo(b){ const r=b.getBoundingClientRect(); tip.textContent=b.dataset.tip; tip.className='tip wrap'; tip.style.display='block'; const w=Math.min(260,window.innerWidth-24); tip.style.maxWidth=w+'px'; let left=r.left+r.width/2-tip.offsetWidth/2; left=Math.max(12,Math.min(left,window.innerWidth-tip.offsetWidth-12)); let top=r.top-tip.offsetHeight-8; if(top<8) top=r.bottom+8; tip.style.left=left+'px'; tip.style.top=top+'px'; }
+  let infoOpen=null;
+  document.addEventListener('mousemove',e=>{ if(infoOpen) return; const t=e.target.closest&&e.target.closest('[data-t]'); if(t){tip.className='tip';tip.textContent=t.dataset.t;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';}else tip.style.display='none';});
+  document.addEventListener('mouseover',e=>{ const b=e.target.closest&&e.target.closest('.info'); if(b){ infoOpen=b; showInfo(b); } });
+  document.addEventListener('mouseout',e=>{ const b=e.target.closest&&e.target.closest('.info'); if(b&&infoOpen===b&&document.activeElement!==b){ infoOpen=null; tip.style.display='none'; } });
+  document.addEventListener('focusin',e=>{ const b=e.target.closest&&e.target.closest('.info'); if(b){ infoOpen=b; showInfo(b); } });
+  document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classList.contains('info')){ infoOpen=null; tip.style.display='none'; } });
+  document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.info'); if(b){ if(infoOpen===b&&tip.style.display==='block'&&document.activeElement===b){ b.blur(); } else { b.focus(); } } });
+
+  // ---------- Facebook login (classic OAuth redirect, implicit flow) ----------
+  const FB_LS='sh_fb_v1';
+  function pageUrl(){ return location.origin+location.pathname; }
+  (function pickUpToken(){
+    const h=new URLSearchParams(location.hash.replace(/^#/,''));
+    if(h.get('access_token')){ const ll=h.get('long_lived_token'); const exp=ll?Date.now()+58*864e5:Date.now()+(+h.get('expires_in')||3600)*1000; try{localStorage.setItem(FB_LS,JSON.stringify({t:ll||h.get('access_token'),exp}))}catch(e){} history.replaceState(null,'',pageUrl()); }
+    try{ const o=JSON.parse(localStorage.getItem(FB_LS)||'null'); if(o&&o.exp>Date.now()+60000) fbToken=o.t; }catch(e){}
+    if(h.get('error')) setStatus('Facebook login error: '+(h.get('error_description')||h.get('error')));
+  })();
+  showTab(location.hash.replace('#','')); window.addEventListener('hashchange',()=>showTab(location.hash.replace('#','')));
+  $('#fbLogin').onclick=()=>{ const u=new URL('https://www.facebook.com/v20.0/dialog/oauth'); u.searchParams.set('client_id',APP_ID); u.searchParams.set('redirect_uri',pageUrl()); u.searchParams.set('response_type','token'); u.searchParams.set('scope',FB_SCOPES);
+    if(window.parent!==window){ window.open(u.toString(),'_blank'); setStatus('Facebook login opened in a new tab — come back here once it says connected'); const t=setInterval(()=>{ try{ const o=JSON.parse(localStorage.getItem(FB_LS)||'null'); if(o&&o.exp>Date.now()+60000&&o.t!==fbToken){ clearInterval(t); fbToken=o.t; loadAll(); } }catch(e){} },2000); setTimeout(()=>clearInterval(t),600000); return; }
+    location.href=u.toString(); };
+  $('#fbLogout').onclick=()=>{ localStorage.removeItem(FB_LS); fbToken=null; loadAll(); };
+  async function gapi(path,params){
+    const u=new URL('https://graph.facebook.com/v20.0/'+path); Object.entries(params||{}).forEach(([k,v])=>u.searchParams.set(k,v)); if(!u.searchParams.has('access_token')) u.searchParams.set('access_token',fbToken);
+    const j=await (await fetch(u)).json(); if(j.error) throw new Error(j.error.message); return j;
+  }
+
+  // ---------- Postiz public API ----------
+  async function pz(path){
+    const r=await fetch(cfg.pzUrl+'/api/public/v1'+path,{headers:{'Authorization':cfg.pzKey,'ngrok-skip-browser-warning':'1'}});
+    if(r.status===404) throw new Error('Postiz is offline — start the tunnel on the office PC (start-tunnel.cmd), then press ↻'); if(r.status===401||r.status===403) throw new Error('Postiz rejected the API key — check it in ⚙'); if(!r.ok) throw new Error('Postiz error '+r.status); return r.json();
+  }
+
+  const setStatus=t=>$('#status').textContent=t;
+  const ymd=d=>d.toISOString().slice(0,10);
+  // Date range (boss, 21 Oct 2026): 7 / 14 / 30 days always end TODAY (latest data); or pick any From → To dates.
+  // days = length of the range, rEnd = the chosen To date ('YYYY-MM-DD') or null for "up to today".
+  let rEnd=null;
+  const endMs=()=>rEnd?new Date(rEnd+'T23:59:59').getTime():Date.now();
+  const startMs=()=>endMs()-days*864e5;
+  const TR=()=>JSON.stringify({since:ymd(new Date(endMs()-(days-1)*864e5)),until:ymd(new Date(endMs()))});   // Meta ads time_range (inclusive)
+  const dLbl=t=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const rangeLbl=()=>rEnd?`${dLbl(endMs()-(days-1)*864e5)} – ${dLbl(endMs())}`:`last ${days} days`;
+  // Result type follows the campaign objective (Meta's own "Results" column). Messaging campaigns count conversations started,
+  // not CAPI leads - otherwise one attributed Lead event hides 30+ conversations.
+  const RESULT_BY_OBJ={OUTCOME_ENGAGEMENT:['onsite_conversion.messaging_conversation_started_7d'],MESSAGES:['onsite_conversion.messaging_conversation_started_7d'],OUTCOME_LEADS:['lead','onsite_conversion.lead_grouped'],LEAD_GENERATION:['lead','onsite_conversion.lead_grouped'],OUTCOME_SALES:['purchase','lead'],CONVERSIONS:['purchase','lead']};
+  const RESULT_DEFAULT=['onsite_conversion.messaging_conversation_started_7d','lead','onsite_conversion.lead_grouped','purchase'];
+  function resultKey(actions,objective){ if(!actions) return null; for(const p of RESULT_BY_OBJ[objective]||RESULT_DEFAULT){ if(actions.find(x=>x.action_type===p)) return p; } return null; }
+  function results(actions,objective){ const k=resultKey(actions,objective); return k?+actions.find(x=>x.action_type===k).value:0; }
+  const sum=(arr,k)=>arr.reduce((a,r)=>a+(+r[k]||0),0);
+
+  // ---------- Loaders ----------
+  async function loadPostiz(){
+    if(!cfg.pzKey){ $('#upcoming').innerHTML='<span class="hint">Add the Postiz API key in ⚙ Settings.</span>'; $('#recent').innerHTML=''; $('#channels').innerHTML=''; return {}; }
+    const now=new Date(), start=new Date(startMs()), end=new Date(+now+14*864e5);
+    const [posts,ints]=await Promise.all([ pz(`/posts?startDate=${start.toISOString()}&endDate=${end.toISOString()}`), pz('/integrations') ]);
+    const list=(posts.posts||posts||[]); PZ_POSTS=list;
+    const up=list.filter(p=>new Date(p.publishDate)>now && p.state!=='PUBLISHED').sort((a,b)=>new Date(a.publishDate)-new Date(b.publishDate));
+    const rec=list.filter(p=>new Date(p.publishDate)<=now).sort((a,b)=>new Date(b.publishDate)-new Date(a.publishDate)).slice(0,8);
+    const strip=h=>(h||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    const row=p=>{ const it=p.integration||{}; const d=new Date(p.publishDate); const st=p.state||''; const cls=st==='PUBLISHED'?'ok':(st==='ERROR'?'err':''); const href=p.releaseURL||(cfg.pzUrl+'/launches');
+      return `<div class="post"><img src="${it.picture||''}" alt=""><div><div class="t"><span class="dot ${({facebook:'fb',instagram:'ig',tiktok:'tt'})[it.providerIdentifier]||''}"></span> ${it.name||''} · ${d.toLocaleString('en-MY',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><div class="c">${strip(p.content)||'(media only)'}</div></div><a class="pill ${cls}" href="${href}" target="_blank" rel="noopener">${st.toLowerCase()||'scheduled'}</a></div>`; };
+    $('#upTitle').textContent='next 14 days'; $('#recTitle').textContent=rangeLbl();
+    $('#upcoming').innerHTML=up.map(row).join('')||'<span class="hint">Nothing scheduled — click “Create post”.</span>';
+    $('#recent').innerHTML=rec.map(row).join('')||'<span class="hint">No posts in this range.</span>';
+    $('#channels').innerHTML='<table>'+ints.map(i=>`<tr><td><span class="dot ${({facebook:'fb',instagram:'ig',tiktok:'tt'})[i.identifier]||''}"></span> ${i.name}</td><td class="hint">${i.identifier}</td><td class="n"><span class="pill ${i.disabled||i.refreshNeeded?'err':'ok'}">${i.refreshNeeded?'reconnect':(i.disabled?'disabled':'connected')}</span></td></tr>`).join('')+'</table>'+
+      '<p class="hint" style="margin:8px 0 0">TikTok posts to the account start working once TikTok approves the app; TikTok numbers are in the TikTok card below.</p>';
+    return {scheduled:up.length, published:rec.filter(p=>p.state==='PUBLISHED').length, errors:list.filter(p=>p.state==='ERROR').length, ints};
+  }
+
+  async function loadAds(){
+    const preset=TR();   // time_range for the chosen dates (was date_preset last_7d/14d/30d)
+    const f='spend,impressions,reach,inline_link_clicks,actions';
+    const [tot,daily,camps,status]=await Promise.all([
+      gapi(`act_${cfg.acct}/insights`,{fields:f,time_range:preset}),
+      gapi(`act_${cfg.acct}/insights`,{fields:'spend,inline_link_clicks,reach,actions',time_range:preset,time_increment:1,limit:100}),
+      gapi(`act_${cfg.acct}/insights`,{fields:'campaign_name,campaign_id,frequency,'+f,time_range:preset,level:'campaign',limit:100}),
+      gapi(`act_${cfg.acct}/campaigns`,{fields:'id,effective_status,objective',limit:100}).catch(()=>({data:[]})),
+    ]);
+    const st={},obj={}; status.data.forEach(c=>{st[c.id]=c.effective_status; obj[c.id]=c.objective;});
+    const t=tot.data[0]||{}; const res=camps.data.reduce((a,r)=>a+results(r.actions,obj[r.campaign_id]),0);
+    ADS={tot:t,camps:camps.data,st,obj,preset};
+    renderChart('#cSpend',daily.data.map(r=>({x:r.date_start,v:+r.spend||0})),v=>rm(v),'o'); ADS.daily=daily.data;
+    camps.data.sort((a,b)=>+b.spend-+a.spend);
+    $('#camps tbody').innerHTML=camps.data.map(r=>{const rs=results(r.actions,obj[r.campaign_id]),sp=+r.spend,cl=+r.inline_link_clicks||0,s=st[r.campaign_id]||'';
+      return `<tr><td>${r.campaign_name}</td><td><span class="pill ${s==='ACTIVE'?'ok':''}">${s.toLowerCase()||'—'}</span></td><td class="n">${rm(sp)}</td><td class="n">${fmt(r.reach)}</td><td class="n">${fmt(cl)}</td><td class="n">${cl?rm(sp/cl):'—'}</td><td class="n">${fmt(rs)}</td><td class="n">${rs?rm(sp/rs):'—'}</td></tr>`;}).join('')||'<tr><td colspan="8" class="hint">No delivery in this range.</td></tr>';
+    return {spend:+t.spend||0, results:res, clicks:+t.inline_link_clicks||0, reach:+t.reach||0};
+  }
+
+  async function loadFacebook(){
+    const since=ymd(new Date(startMs())), until=ymd(new Date(endMs()));
+    const page=await gapi(FB_PAGE_ID,{fields:'name,followers_count,fan_count,instagram_business_account,access_token'});
+    const ptok=page.access_token; PTOK=ptok;
+    const ins=await gapi(`${FB_PAGE_ID}/insights`,{metric:'page_post_engagements,page_daily_follows,page_daily_unfollows_unique,page_video_views,page_video_views_organic,page_video_views_paid,page_video_complete_views_30s,page_video_view_time,page_video_repeat_views,page_views_total,page_actions_post_reactions_total,page_follows',period:'day',since,until,access_token:ptok});
+    const m={}; ins.data.forEach(d=>m[d.name]=d.values.map(v=>({x:v.end_time.slice(0,10),v:(v.value&&typeof v.value==='object')?v.value:(+v.value||0)})));
+    FB_M=m;
+    renderChart('#cFb',m.page_post_engagements||[],v=>fmt(v),'');
+    const igId=page.instagram_business_account&&page.instagram_business_account.id; IG_ID=igId||'';
+    let ig={};
+    if(igId){
+      try{
+        const [prof,tot,reach]=await Promise.all([
+          gapi(igId,{fields:'username,followers_count,media_count',access_token:ptok}),
+          gapi(`${igId}/insights`,{metric:'reach,views,likes,comments,shares,saves,total_interactions',period:'day',metric_type:'total_value',since,until,access_token:ptok}),
+          gapi(`${igId}/insights`,{metric:'reach',period:'day',since,until,access_token:ptok}),
+        ]);
+        tot.data.forEach(d=>ig[d.name]=d.total_value&&d.total_value.value); ig.followers=prof.followers_count; ig.username=prof.username; ig.media_count=prof.media_count; IG_USER=prof.username||'';
+        IG_REACH=(reach.data[0]||{values:[]}).values.map(v=>({x:v.end_time.slice(0,10),v:+v.value||0})); IG_TOT=ig;
+        renderChart('#cIg',IG_REACH,v=>fmt(v),'g');
+      }catch(e){ $('#cIg').innerHTML='<span class="err">Instagram: '+e.message+'</span>'; }
+    } else $('#cIg').innerHTML='<span class="hint">No Instagram account linked to the Page.</span>';
+    return {followers:page.followers_count, engagements:sum(m.page_post_engagements||[],'v'), follows:sum(m.page_daily_follows||[],'v'), video:sum(m.page_video_views||[],'v'), views:sum(m.page_views_total||[],'v'), ig};
+  }
+
+  // ---------- Posts, comments (Meta Graph) and TikTok (Postiz) ----------
+  let POSTS=[], COMMENTS=[], CM_OK=new Set(), PTOK='', IG_ID='', IG_USER='', FB_M={}, IG_REACH=[], IG_TOT={}, ADS={}, PZ_POSTS=[];
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const ago=t=>{ const m=(Date.now()-new Date(t))/6e4; return m<60?Math.max(1,Math.round(m))+' min':m<1440?Math.round(m/60)+' h':Math.round(m/1440)+' d'; };
+  const short=(s,n)=>{ s=String(s||'').replace(/\s+/g,' ').trim(); return s.length>n?s.slice(0,n-1)+'…':s; };
+  async function gpost(path,params){ const b=new URLSearchParams(params); if(!b.has('access_token')) b.set('access_token',PTOK||fbToken); const j=await (await fetch('https://graph.facebook.com/v20.0/'+path,{method:'POST',body:b})).json(); if(j.error) throw new Error(j.error.message); return j; }
+  async function checkPerms(){
+    try{ const p=await gapi('me/permissions'); const g=new Set(p.data.filter(x=>x.status==='granted').map(x=>x.permission));
+      const need={pages_read_user_content:'see who commented on Facebook',pages_manage_engagement:'reply to Facebook comments',instagram_manage_comments:'read & reply to Instagram comments'};
+      const miss=Object.keys(need).filter(k=>!g.has(k));
+      return miss.length?'The Meta token is missing '+miss.map(k=>`<b>${k}</b> (${need[k]})`).join(', ')+'. Business Settings → System users → your system user → Generate new token → tick these too, then paste it in ⚙.':'';
+    }catch(e){ return ''; }
+  }
+  async function loadPosts(){
+    const since=Math.floor(startMs()/1000), until=Math.floor(endMs()/1000), notes=[];
+    const [fbr,igr]=await Promise.allSettled([
+      gapi(FB_PAGE_ID+'/published_posts',{fields:'id,message,story,created_time,permalink_url,full_picture,shares,reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)',since,until,limit:50,access_token:PTOK}),
+      IG_ID?gapi(IG_ID+'/media',{fields:'id,caption,media_type,media_product_type,permalink,thumbnail_url,media_url,timestamp,like_count,comments_count',limit:50,access_token:PTOK}):Promise.resolve({data:[]}),
+    ]);
+    const fbp=fbr.status==='fulfilled'?fbr.value.data:(notes.push('Facebook posts: '+fbr.reason.message),[]);
+    const igp=igr.status==='fulfilled'?igr.value.data.filter(m=>new Date(m.timestamp)>=new Date(since*1000)&&new Date(m.timestamp)<=new Date(until*1000)):(notes.push('Instagram posts: '+igr.reason.message),[]);
+    const fbRows=fbp.map(p=>({pf:'fb',id:p.id,at:p.created_time,text:p.message||p.story||'',url:p.permalink_url,pic:p.full_picture,likes:p.reactions?+p.reactions.summary.total_count:0,comments:p.comments?+p.comments.summary.total_count:0,shares:p.shares?+p.shares.count:0}));
+    const igRows=igp.map(m=>({pf:'ig',id:m.id,at:m.timestamp,text:m.caption||'',url:m.permalink,pic:m.thumbnail_url||m.media_url,likes:+m.like_count||0,comments:+m.comments_count||0,type:m.media_product_type||m.media_type}));
+    // per-post insights: Meta keeps retiring metrics, so try the richest set first and fall back
+    const ins=async(id,sets,map)=>{ for(const m of sets){ try{ const i=await gapi(id+'/insights',{metric:m,access_token:PTOK}); i.data.forEach(d=>{ const v=d.values&&d.values[0]&&d.values[0].value; map(d.name,(v&&typeof v==='object')?Object.values(v).reduce((a,b)=>a+(+b||0),0):+v||0); }); return; }catch(e){} } };
+    await Promise.all([
+      ...fbRows.map(r=>ins(r.id,['post_media_view,post_clicks,post_video_views,post_video_avg_time_watched,post_video_complete_views_30s','post_media_view,post_clicks','post_media_view','post_clicks'],(k,v)=>{ if(k==='post_media_view') r.views=v; else if(k==='post_clicks') r.clicks=v; else if(k==='post_video_views') r.vviews=v||null; else if(k==='post_video_avg_time_watched') r.avgw=v?v/1000:null; else if(k==='post_video_complete_views_30s') r.v30=v||null; })),
+      ...igRows.map(r=>ins(r.id,/REEL/i.test(r.type||'')?['reach,views,saved,shares,ig_reels_avg_watch_time','reach,views,saved,shares','reach,saved','reach']:['reach,views,saved,shares','reach,saved','reach'],(k,v)=>{ if(k==='ig_reels_avg_watch_time') r.avgw=v/1000; else r[k]=v; })),
+    ]);
+    POSTS=[...fbRows,...igRows];
+    $('#postsNote').innerHTML=notes.map(esc).join(' · ');
+    renderPosts(); renderFbPosts(); renderIgPosts();
+    return {fbRows,igRows};
+  }
+  function renderPosts(){
+    const pf=$('#postsPf').value, sort=$('#postsSort').value, eng=r=>(r.likes||0)+(r.comments||0)+(r.shares||0)+(r.saved||0);
+    const rows=POSTS.filter(r=>!pf||r.pf===pf).sort((a,b)=>sort==='reach'?((b.reach||b.views||0)-(a.reach||a.views||0)):sort==='eng'?eng(b)-eng(a):sort==='comments'?(b.comments||0)-(a.comments||0):new Date(b.at)-new Date(a.at));
+    $('#postsTitle').textContent=`${rows.length} posts · ${rangeLbl()}`;
+    const n=v=>v==null?'<span class="hint">—</span>':fmt(v);
+    const cmCell=r=>{ if(!r.comments||!CM_OK.has(r.id)) return n(r.comments); const open=COMMENTS.filter(c=>c.post.id===r.id&&!replied(c)).length; return `${fmt(open)} <span class="hint">/ ${fmt(r.comments)}</span>`; };
+    $('#posts tbody').innerHTML=rows.map(r=>`<tr><td>${r.pic?`<a href="${esc(r.url)}" target="_blank" rel="noopener"><img class="th" src="${esc(r.pic)}" alt="" loading="lazy"></a>`:''}</td><td><span class="pf ${r.pf}">${r.pf==='fb'?'Facebook':'Instagram'}${r.type&&/REEL/i.test(r.type)?' reel':''}</span> <span class="hint">${new Date(r.at).toLocaleString('en-MY',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span><div>${esc(short(r.text,120))||'<span class="hint">(media only)</span>'}</div></td><td class="n">${n(r.reach)}</td><td class="n">${n(r.views)}</td><td class="n">${n(r.likes)}</td><td class="n">${cmCell(r)}</td><td class="n">${n(r.shares)}</td><td class="n">${r.pf==='ig'?n(r.saved):n(r.clicks)}</td><td><a class="pill" href="${esc(r.url)}" target="_blank" rel="noopener">open</a></td></tr>`).join('')||'<tr><td colspan="9" class="hint">No posts in this range.</td></tr>';
+  }
+  async function loadComments(fbRows,igRows){
+    const out=[], errs=[], withC=r=>r.comments>0; CM_OK=new Set();
+    await Promise.all([
+      ...fbRows.filter(withC).slice(0,30).map(async p=>{ try{ const j=await gapi(p.id+'/comments',{fields:'id,from,message,created_time,like_count,comments.limit(25){id,from,message,created_time}',filter:'toplevel',order:'reverse_chronological',limit:50,access_token:PTOK});
+        CM_OK.add(p.id); j.data.forEach(c=>{ const reps=(c.comments&&c.comments.data)||[]; out.push({pf:'fb',id:c.id,who:c.from?c.from.name:'Facebook user',mine:!!(c.from&&c.from.id===FB_PAGE_ID),text:c.message||'',at:c.created_time,post:p,replies:reps.map(x=>({who:x.from?x.from.name:'Facebook user',text:x.message||'',mine:!!(x.from&&x.from.id===FB_PAGE_ID)}))}); }); }catch(e){ errs.push('Facebook comments: '+e.message); } }),
+      ...igRows.filter(withC).slice(0,30).map(async p=>{ try{ const j=await gapi(p.id+'/comments',{fields:'id,text,username,timestamp,like_count,replies.limit(25){id,text,username,timestamp}',limit:50,access_token:PTOK});
+        CM_OK.add(p.id); j.data.forEach(c=>{ const reps=(c.replies&&c.replies.data)||[]; out.push({pf:'ig',id:c.id,who:'@'+(c.username||'user'),mine:!!IG_USER&&c.username===IG_USER,text:c.text||'',at:c.timestamp,post:p,replies:reps.map(x=>({who:'@'+(x.username||'user'),text:x.text||'',mine:!!IG_USER&&x.username===IG_USER}))}); }); }catch(e){ errs.push('Instagram comments: '+e.message); } }),
+    ]);
+    COMMENTS=out.filter(c=>!c.mine).sort((a,b)=>new Date(b.at)-new Date(a.at));
+    const perm=await checkPerms();
+    $('#cmNote').innerHTML=[perm,...new Set(errs.map(esc))].filter(Boolean).join('<br>');
+    renderComments(); renderPosts();
+  }
+  // ignored comments (spam, "PM sent" etc.) are remembered in this browser only
+  const IGN_LS='em_hub_ignored_v1'; let IGN=new Set(); try{ IGN=new Set(JSON.parse(localStorage.getItem(IGN_LS)||'[]')); }catch(e){}
+  const saveIgn=()=>{ try{ localStorage.setItem(IGN_LS,JSON.stringify([...IGN].slice(-500))); }catch(e){} };
+  const replied=c=>c.replies.some(r=>r.mine)||IGN.has(c.id);
+  // one renderer for the Overview inbox and the per-platform copies (Facebook / Instagram tabs); each box filters by data-pf
+  function renderComments(){
+    document.querySelectorAll('.cmlist').forEach(box=>{
+      const pf=box.dataset.pf||'', card=box.closest('.card'), only=card.querySelector('.cmUnr').checked, all=COMMENTS.filter(c=>!pf||c.pf===pf);
+      const list=all.filter(c=>!only||!replied(c)), unr=all.filter(c=>!replied(c)).length;
+      card.querySelector('.cmTitle').textContent=all.length?`${unr} unreplied of ${all.length}`:'';
+      box.innerHTML=list.map(c=>{ const done=replied(c), ign=IGN.has(c.id); return `<div class="cm ${done?'done':''}" data-i="${COMMENTS.indexOf(c)}"><span class="pf ${c.pf}">${c.pf==='fb'?'FB':'IG'}</span><div>
+      <span class="who">${esc(c.who)}</span> <span class="when">${ago(c.at)} ago · on “${esc(short(c.post.text,50))||'media post'}” <a href="${esc(c.post.url)}" target="_blank" rel="noopener">open</a></span> ${ign?'<span class="pill">ignored</span>':''}
+      <div class="txt">${esc(c.text)}</div>${c.replies.map(r=>`<div class="reply"><b>${esc(r.who)}</b>${r.mine?' <span class="pill ok">you</span>':''}: ${esc(r.text)}</div>`).join('')}
+      <div class="rep"><input placeholder="${done?'Reply again…':'Write a reply…'}" maxlength="2000"><button class="on" data-act="reply">Reply</button><button class="ghost" data-act="ign" title="${ign?'Put this comment back in the unreplied list':'No reply needed — hide it from the unreplied list'}">${ign?'Unignore':'Ignore'}</button></div><div class="err"></div></div></div>`; }).join('')
+      ||`<span class="hint">${all.length?'Every comment has a reply 🎉':'No customer comments on posts in this range.'}</span>`;
+    });
+  }
+  document.addEventListener('click',async e=>{ if(!e.target.closest('.cmlist')) return; const b=e.target.closest('button'); if(!b||b.disabled) return; const box=b.closest('.cm'), c=COMMENTS[+box.dataset.i];
+    if(b.dataset.act==='ign'){ if(IGN.has(c.id)) IGN.delete(c.id); else IGN.add(c.id); saveIgn(); renderComments(); refreshCommentTile(); return; }
+    const inp=box.querySelector('input'), msg=inp.value.trim(); if(!msg){ inp.focus(); return; }
+    b.disabled=true; b.classList.add('wait'); b.textContent='Sending…'; box.querySelector('.err').textContent='';
+    try{ if(c.pf==='fb') await gpost(c.id+'/comments',{message:msg}); else await gpost(c.id+'/replies',{message:msg}); c.replies.push({who:c.pf==='fb'?'Page':'@'+IG_USER,text:msg,mine:true}); renderComments(); refreshCommentTile(); }
+    catch(err){ box.querySelector('.err').textContent=err.message; b.disabled=false; b.classList.remove('wait'); b.textContent='Reply'; } });
+  document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.closest('.cmlist,.msglist')){ e.preventDefault(); e.target.nextElementSibling.click(); } });
+  function refreshCommentTile(){ renderPosts(); const t=[...document.querySelectorAll('#kpis .tile')].find(x=>/^Comments/.test(x.querySelector('.k').textContent.trim())); if(!t) return; const u=COMMENTS.filter(c=>!replied(c)).length; t.querySelector('.v').textContent=fmt(u); t.querySelector('.d').innerHTML=u?'<span class="err">waiting for a reply</span>':'all replied'; }
+  document.querySelectorAll('.cmUnr').forEach(x=>x.onchange=renderComments); document.querySelectorAll('.msgWait').forEach(x=>x.onchange=renderMessages);
+  $('#postsPf').onchange=renderPosts; $('#postsSort').onchange=renderPosts; $('#fbSort').onchange=renderFbPosts; $('#igSort').onchange=renderIgPosts;
+  /* ---- Messages inbox: Messenger + Instagram DMs (needs pages_messaging + instagram_manage_messages on the token) ---- */
+  let THREADS=[], MSG_OPEN=null;
+  const msgMine=(pf,from)=>!!from&&(from.id===FB_PAGE_ID||(pf==='ig'&&!!IG_USER&&from.username===IG_USER));
+  async function loadMessages(){
+    const out=[], errs=[]; document.querySelectorAll('.msglist').forEach(b=>b.innerHTML='<span class="hint">Loading messages…</span>');
+    for(const [platform,pf] of [['messenger','fb'],['instagram','ig']]){
+      try{ const j=await gapi(FB_PAGE_ID+'/conversations',{platform,fields:'id,participants,updated_time,unread_count,messages.limit(30){id,message,from,created_time,attachments{image_data,file_url,name}}',limit:25,access_token:PTOK});
+        (j.data||[]).forEach(t=>{ const parts=(t.participants&&t.participants.data)||[]; const other=parts.find(p=>!msgMine(pf,p))||{};
+          const msgs=(((t.messages&&t.messages.data)||[])).slice().reverse().map(m=>({id:m.id,text:m.message||'',at:m.created_time,mine:msgMine(pf,m.from),att:((m.attachments&&m.attachments.data)||[]).map(a=>(a.image_data&&a.image_data.url)||a.file_url||'').filter(Boolean)}));
+          out.push({pf,id:t.id,who:other.name||(other.username?'@'+other.username:'Customer'),psid:other.id||'',at:t.updated_time,unread:t.unread_count||0,msgs}); }); }
+      catch(e){ errs.push((pf==='fb'?'Messenger':'Instagram DMs')+': '+e.message); }
+    }
+    THREADS=out.sort((a,b)=>new Date(b.at)-new Date(a.at));
+    const needTok=errs.some(m=>/pages_messaging|permissions to view messages/i.test(m));
+    $('#msgNote').innerHTML=needTok?'The Meta token cannot read messages yet. Business Settings → System users → your system user → Generate new token → tick <b>pages_messaging</b> and <b>instagram_manage_messages</b> (keep the others), then paste it in ⚙.':[...new Set(errs.map(esc))].join('<br>');
+    renderMessages(); refreshMsgTile();
+  }
+  const needsReply=t=>{ const l=t.msgs[t.msgs.length-1]; return !!l&&!l.mine; };
+  // "Clear inbox": Meta gives no API to delete Page conversations, so the hub remembers a per-platform cut-off (this browser only)
+  // and hides conversations whose last activity is before it. A customer who writes again after the clear reappears.
+  const CLR_LS='em_hub_msg_clear_v1'; let CLR={}; try{ CLR=JSON.parse(localStorage.getItem(CLR_LS)||'{}')||{}; }catch(e){}
+  const saveClr=()=>{ try{ localStorage.setItem(CLR_LS,JSON.stringify(CLR)); }catch(e){} };
+  const cleared=t=>!!CLR[t.pf]&&new Date(t.at)<=new Date(CLR[t.pf]);
+  const liveThreads=()=>THREADS.filter(t=>!cleared(t));
+  document.addEventListener('click',e=>{ const b=e.target.closest('.clrMsg'); if(!b) return; const pfs=b.dataset.pf?[b.dataset.pf]:['fb','ig'];
+    if(b.dataset.undo){ pfs.forEach(pf=>delete CLR[pf]); } else { const now=new Date().toISOString(); pfs.forEach(pf=>CLR[pf]=now); }
+    saveClr(); renderMessages(); refreshMsgTile(); });
+  function renderMessages(){
+    document.querySelectorAll('.msglist').forEach(boxEl=>{
+    const pf=boxEl.dataset.pf||'', card=boxEl.closest('.card'), only=card.querySelector('.msgWait').checked, all=liveThreads().filter(t=>!pf||t.pf===pf);
+    const hidden=THREADS.filter(t=>(!pf||t.pf===pf)&&cleared(t)).length, cutoff=pf?CLR[pf]:(CLR.fb||CLR.ig), clrBtn=card.querySelector('.clrMsg');
+    if(clrBtn){ if(cutoff){ clrBtn.textContent='Undo clear'; clrBtn.dataset.undo='1'; clrBtn.title='Bring back the '+hidden+' hidden conversation'+(hidden===1?'':'s'); } else { clrBtn.textContent='Clear inbox'; delete clrBtn.dataset.undo; } }
+    const clrNote=cutoff?`<p class="hint" style="margin:0 0 8px">Inbox cleared ${new Date(cutoff).toLocaleString('en-MY',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} — ${hidden} older conversation${hidden===1?'':'s'} hidden on this device. Anyone who writes again shows up here.</p>`:'';
+    const list=all.filter(t=>!only||needsReply(t)||t.id===MSG_OPEN), wait=all.filter(needsReply).length;
+    card.querySelector('.msgTitle').textContent=all.length?`${wait} waiting of ${all.length}`:'';
+    boxEl.innerHTML=clrNote+(list.map(t=>{ const l=t.msgs[t.msgs.length-1]||{}, open=t.id===MSG_OPEN, w=needsReply(t);
+      return `<div class="th ${w?'wait':''} ${open?'open':''}" data-id="${esc(t.id)}"><span class="pf ${t.pf}">${t.pf==='fb'?'FB':'IG'}</span>
+      <div><span class="who">${esc(t.who)}</span>${t.unread?`<span class="n">${t.unread}</span>`:''}<div class="snip">${l.mine?'You: ':''}${esc(short(l.text||(l.att&&l.att.length?'📎 attachment':''),90))}</div></div><span class="when">${l.at?ago(l.at)+' ago':''}</span>
+      <div class="body">${t.msgs.map(m=>`<div class="bub ${m.mine?'me':''}">${esc(m.text)}${m.att.map(u=>/\.(jpe?g|png|gif|webp)(\?|$)/i.test(u)||/image/i.test(u)?`<img src="${esc(u)}" alt="">`:`<a href="${esc(u)}" target="_blank" rel="noopener">📎 attachment</a>`).join('')}<span class="t">${m.mine?'Page':esc(t.who)} · ${ago(m.at)} ago</span></div>`).join('')||'<span class="hint">No messages loaded.</span>'}
+        <div class="rep"><input placeholder="Reply as the Page…" maxlength="2000"><button class="on" data-act="send">Send</button></div><div class="err"></div></div></div>`; }).join('')
+      ||`<span class="hint">${all.length?'Every conversation has a reply 🎉':($('#msgNote').textContent?'':(cutoff?'Fresh start — nothing new since the clear.':pf==='fb'?'No Messenger conversations yet.':pf==='ig'?'No Instagram DMs yet.':'No Messenger / Instagram conversations yet.'))}</span>`);
+    });
+  }
+  document.addEventListener('click',async e=>{
+    const list=e.target.closest('.msglist'); if(!list) return;
+    const b=e.target.closest('button'); const box=e.target.closest('.th'); if(!box) return; const t=THREADS.find(x=>x.id===box.dataset.id); if(!t) return;
+    if(!b){ if(e.target.closest('.body')) return; MSG_OPEN=(MSG_OPEN===t.id)?null:t.id; renderMessages(); if(MSG_OPEN){ const i=list.querySelector('.th.open input'); if(i) i.focus(); } return; }
+    if(b.disabled||b.dataset.act!=='send') return;
+    const inp=box.querySelector('input'), msg=inp.value.trim(); if(!msg){ inp.focus(); return; }
+    b.disabled=true; b.classList.add('wait'); b.textContent='Sending…'; box.querySelector('.err').textContent='';
+    try{ if(!t.psid) throw new Error('Cannot tell who to reply to in this conversation — reply from Business Suite.');
+      await gpost(FB_PAGE_ID+'/messages',{recipient:JSON.stringify({id:t.psid}),messaging_type:'RESPONSE',message:JSON.stringify({text:msg})});
+      t.msgs.push({id:'local'+Date.now(),text:msg,at:new Date().toISOString(),mine:true,att:[]}); t.at=new Date().toISOString(); renderMessages(); refreshMsgTile(); }
+    catch(err){ const m=/2018278|24 hour|outside of allowed window/i.test(err.message)?'More than 24 hours since the customer last wrote — Meta blocks Page replies now. Reply from the Meta Business Suite app instead.':err.message; box.querySelector('.err').textContent=m; b.disabled=false; b.classList.remove('wait'); b.textContent='Send'; } });
+  $('#msgReload').onclick=()=>{ if(PTOK) loadMessages(); };
+  function refreshMsgTile(){ const t=[...document.querySelectorAll('#kpis .tile')].find(x=>/^Messages/.test(x.querySelector('.k').textContent.trim())); if(!t) return; const w=liveThreads().filter(needsReply).length; t.querySelector('.v').textContent=fmt(w); t.querySelector('.d').innerHTML=w?'<span class="err">waiting for a reply</span>':'all replied'; }
+  async function loadTikTok(ints){
+    const tt=(ints||[]).find(i=>i.identifier==='tiktok'&&!i.disabled);
+    if(!tt){ $('#tiktok').innerHTML='<span class="hint">TikTok is not connected in Postiz.</span>'; return null; }
+    const a=await pz('/analytics/'+tt.id+'?date=30'); const g=l=>{ const x=a.find(r=>r.label===l), d=x&&x.data&&x.data[x.data.length-1]; return d?+d.total:null; };
+    const s={followers:g('Followers'),following:g('Following'),likes:g('Total Likes'),videos:g('Videos'),views:g('Views'),rlikes:g('Recent Likes'),rcomments:g('Recent Comments'),rshares:g('Recent Shares')};
+    ttSnapshot(s);
+    $('#tiktok').innerHTML=`<div class="tiles">${[['Followers',s.followers],['Total likes',s.likes],['Videos',s.videos],['Views · recent videos',s.views],['Likes · recent',s.rlikes],['Comments · recent',s.rcomments],['Shares · recent',s.rshares]].map(([k,v])=>`<div class="tile"><div class="k"><span class="dot tt"></span>${k}</div><div class="v">${v==null?'—':fmt(v)}</div></div>`).join('')}</div>
+      <p class="hint" style="margin:8px 0 0">“Recent” = the latest videos TikTok reports to Postiz. TikTok's API does not give this app per-video numbers or comments — open TikTok Studio for those and reply to comments in the TikTok app.</p>`;
+    return s;
+  }
+
+  /* ===================== Platform tabs ===================== */
+  const secs=v=>v==null?'—':v<60?fmt(v,v<10?1:0)+'s':Math.floor(v/60)+'m '+Math.round(v%60)+'s';
+  const hrs=ms=>{ const h=ms/36e5; return h<1?Math.round(ms/6e4)+' min':fmt(h,1)+' h'; };
+  const pct=(a,b)=>b?fmt(100*a/b,a/b<.1?1:0)+'%':'—';
+  const tileP=(k,v,cls,d,tip)=>`<div class="tile"><div class="k"><span class="dot ${cls}"></span>${k} ${info(tip||'')}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`;
+  function renderBars(sel,rows,cls,fmtV){
+    const el=typeof sel==='string'?$(sel):sel; rows=rows.filter(r=>r.v!=null); if(!rows.length){ el.innerHTML='<span class="hint">No data for this range.</span>'; return; }
+    const max=Math.max(...rows.map(r=>r.v))||1, tot=rows.reduce((a,r)=>a+r.v,0);
+    el.className='bars '+(cls||''); el.innerHTML=rows.map(r=>`<div class="r"><span class="l" title="${esc(r.l)}">${esc(r.l)}</span><span class="b"><i style="width:${Math.max(1,100*r.v/max)}%"></i></span><span class="v">${(fmtV||fmt)(r.v)}${r.sub!=null?` <small>${esc(r.sub)}</small>`:(r.share?` <small>${pct(r.v,tot)}</small>`:'')}</span></div>`).join('');
+  }
+  const n=v=>v==null?'<span class="hint">—</span>':fmt(v);
+  const cmOpen=r=>{ if(!r.comments||!CM_OK.has(r.id)) return n(r.comments); const open=COMMENTS.filter(c=>c.post.id===r.id&&!replied(c)).length; return `${fmt(open)} <span class="hint">/ ${fmt(r.comments)}</span>`; };
+  const postCell=r=>`<td>${r.pic?`<a href="${esc(r.url)}" target="_blank" rel="noopener"><img class="th" src="${esc(r.pic)}" alt="" loading="lazy"></a>`:''}</td><td><span class="hint">${new Date(r.at).toLocaleString('en-MY',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>${r.type?` <span class="pill">${/REEL/i.test(r.type)?'reel':/VIDEO/i.test(r.type)?'video':/CAROUSEL/i.test(r.type)?'carousel':'post'}</span>`:''}<div>${esc(short(r.text,110))||'<span class="hint">(media only)</span>'}</div></td>`;
+  const openCell=r=>`<td><a class="pill" href="${esc(r.url)}" target="_blank" rel="noopener">open</a></td>`;
+
+  // ---- Facebook tab ----
+  function renderFbPosts(){
+    const sort=$('#fbSort').value, eng=r=>(r.likes||0)+(r.comments||0)+(r.shares||0);
+    const rows=POSTS.filter(r=>r.pf==='fb').sort((a,b)=>sort==='views'?((b.views||0)-(a.views||0)):sort==='eng'?eng(b)-eng(a):sort==='comments'?(b.comments||0)-(a.comments||0):sort==='clicks'?(b.clicks||0)-(a.clicks||0):new Date(b.at)-new Date(a.at));
+    $('#fbPostsTitle').textContent=`${rows.length} posts · ${rangeLbl()}`;
+    $('#fbPosts tbody').innerHTML=rows.map(r=>`<tr>${postCell(r)}<td class="n">${n(r.views)}</td><td class="n">${n(r.vviews)}</td><td class="n">${n(r.v30)}</td><td class="n">${r.avgw!=null?secs(r.avgw):'<span class="hint">—</span>'}</td><td class="n">${n(r.likes)}</td><td class="n">${cmOpen(r)}</td><td class="n">${n(r.shares)}</td><td class="n">${n(r.clicks)}</td>${openCell(r)}</tr>`).join('')||`<tr><td colspan="11" class="hint">${fbToken?'No Facebook posts in this range.':'Connect Facebook (⚙) to see post analytics.'}</td></tr>`;
+  }
+  function renderFbTab(fb){
+    const m=FB_M, S=k=>sum(m[k]||[],'v');
+    const react={}; (m.page_actions_post_reactions_total||[]).forEach(r=>{ if(r.v&&typeof r.v==='object') Object.entries(r.v).forEach(([k,v])=>react[k]=(react[k]||0)+(+v||0)); });
+    const reacts=Object.values(react).reduce((a,b)=>a+b,0), follows=S('page_daily_follows'), unf=S('page_daily_unfollows_unique'), vv=S('page_video_views'), org=S('page_video_views_organic'), paid=S('page_video_views_paid'), v30=S('page_video_complete_views_30s'), vt=S('page_video_view_time');
+    const posts=POSTS.filter(r=>r.pf==='fb'), fbUnr=COMMENTS.filter(c=>c.pf==='fb'&&!replied(c)).length, fbWait=liveThreads().filter(t=>t.pf==='fb'&&needsReply(t)).length;
+    $('#fbKpis').innerHTML=[
+      tileP('Followers',fmt(fb.followers),'fb',`+${fmt(follows)} · −${fmt(unf)} · ${rangeLbl()}`,'People following the Page now; below: new follows and unfollows in the period.'),
+      tileP('Post engagements',fmt(S('page_post_engagements')),'fb',`${fmt(reacts)} reactions`,'Reactions, comments, shares and clicks on Page posts.'),
+      tileP('Video views',fmt(vv),'fb',`${fmt(org)} organic · ${fmt(paid)} paid`,'Plays of 3 seconds or more on Page videos and reels.'),
+      tileP('30s views',fmt(v30),'fb',vv?pct(v30,vv)+' of video views':'','Plays that lasted 30 seconds or to the end.'),
+      tileP('Watch time',hrs(vt),'fb','','Total time people spent watching Page videos.'),
+      tileP('Page views',fmt(S('page_views_total')),'fb','','Times the Page profile was opened.'),
+      tileP('Posts',fmt(posts.length),'fb',rangeLbl(),'Page posts published in the period.'),
+      tileP('Comments',fmt(fbUnr),'',fbUnr?'<span class="err">waiting for a reply</span>':'all replied','Customer comments on Facebook posts nobody has replied to.'),
+      tileP('Messenger',fmt(fbWait),'',fbWait?'<span class="err">waiting for a reply</span>':'all replied','Messenger conversations where the customer wrote last.'),
+    ].join('');
+    renderChart('#fbC1',m.page_post_engagements||[],v=>fmt(v),'');
+    renderChart('#fbC2',m.page_video_views||[],v=>fmt(v),'');
+    renderChart('#fbC3',m.page_views_total||[],v=>fmt(v),'');
+    renderChart('#fbC4',m.page_daily_follows||[],v=>fmt(v),'g');
+    renderBars('#fbVid',[{l:'Organic views',v:org,sub:pct(org,vv)+' of views'},{l:'Paid views (ads)',v:paid,sub:pct(paid,vv)+' of views'},{l:'30-second views',v:v30,sub:pct(v30,vv)+' of views'},{l:'Repeat views',v:S('page_video_repeat_views'),sub:'watched again'}],'fb');
+    const RN={like:'👍 Like',love:'❤️ Love',wow:'😮 Wow',haha:'😆 Haha',sorry:'😢 Sad',anger:'😡 Angry',care:'🤗 Care'};
+    renderBars('#fbReact',Object.entries(react).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({l:RN[k]||k,v,share:1})),'fb');
+    renderFbPosts();
+  }
+
+  // ---- Instagram tab ----
+  function renderIgPosts(){
+    const sort=$('#igSort').value, eng=r=>(r.likes||0)+(r.comments||0)+(r.shares||0)+(r.saved||0);
+    const rows=POSTS.filter(r=>r.pf==='ig').sort((a,b)=>sort==='views'?((b.views||0)-(a.views||0)):sort==='reach'?((b.reach||0)-(a.reach||0)):sort==='eng'?eng(b)-eng(a):sort==='comments'?(b.comments||0)-(a.comments||0):new Date(b.at)-new Date(a.at));
+    $('#igPostsTitle').textContent=`${rows.length} posts · ${rangeLbl()}`;
+    $('#igPosts tbody').innerHTML=rows.map(r=>`<tr>${postCell(r)}<td class="n">${n(r.reach)}</td><td class="n">${n(r.views)}</td><td class="n">${n(r.likes)}</td><td class="n">${cmOpen(r)}</td><td class="n">${n(r.shares)}</td><td class="n">${n(r.saved)}</td><td class="n">${r.avgw!=null?secs(r.avgw):'<span class="hint">—</span>'}</td>${openCell(r)}</tr>`).join('')||`<tr><td colspan="10" class="hint">${fbToken?'No Instagram posts in this range.':'Connect Facebook (⚙) to see post analytics.'}</td></tr>`;
+  }
+  async function loadIgTab(){
+    if(!IG_ID){ $('#igKpis').innerHTML='<div class="tile"><div class="k">Instagram</div><div class="d">'+(fbToken?'No Instagram account linked to the Page.':'Connect Facebook (⚙) to load Instagram.')+'</div></div>'; return; }
+    const since=ymd(new Date(startMs())), until=ymd(new Date(endMs()));
+    // Meta gives only the period total for most IG metrics, so one batch call asks for each day separately (max 50 per batch)
+    const dayReq=[]; for(let i=days;i>=1;i--){ const a=new Date(endMs()-i*864e5), b=new Date(endMs()-(i-1)*864e5); dayReq.push({method:'GET',relative_url:`${IG_ID}/insights?metric=views,likes,comments,shares,saves,total_interactions,profile_views,accounts_engaged&period=day&metric_type=total_value&since=${ymd(a)}&until=${ymd(b)}`}); }
+    const [batch,byType,byFollow]=await Promise.all([
+      (async()=>{ const b=new URLSearchParams({access_token:PTOK,batch:JSON.stringify(dayReq)}); const j=await (await fetch('https://graph.facebook.com/v20.0/',{method:'POST',body:b})).json(); if(j.error) throw new Error(j.error.message); return j; })(),
+      gapi(`${IG_ID}/insights`,{metric:'views,reach,total_interactions',period:'day',metric_type:'total_value',breakdown:'media_product_type',since,until,access_token:PTOK}).catch(()=>null),
+      gapi(`${IG_ID}/insights`,{metric:'views,reach',period:'day',metric_type:'total_value',breakdown:'follow_type',since,until,access_token:PTOK}).catch(()=>null),
+    ]);
+    const daily={}; batch.forEach((r,i)=>{ const d=ymd(new Date(endMs()-(days-i)*864e5)); let body={}; try{ body=JSON.parse(r.body); }catch(e){} (body.data||[]).forEach(mtr=>{ (daily[mtr.name]=daily[mtr.name]||[]).push({x:d,v:+(mtr.total_value&&mtr.total_value.value)||0}); }); });
+    const ig=IG_TOT, posts=POSTS.filter(r=>r.pf==='ig'), igUnr=COMMENTS.filter(c=>c.pf==='ig'&&!replied(c)).length, igWait=liveThreads().filter(t=>t.pf==='ig'&&needsReply(t)).length;
+    const bd=(res,name)=>{ const m=res&&res.data.find(x=>x.name===name); const b=m&&m.total_value&&m.total_value.breakdowns&&m.total_value.breakdowns[0]; return b?b.results.map(r=>({k:r.dimension_values[0],v:+r.value||0})):[]; };
+    const fv=bd(byFollow,'views'), nonf=(fv.find(x=>x.k==='NON_FOLLOWER')||{}).v||0, folv=(fv.find(x=>x.k==='FOLLOWER')||{}).v||0;
+    $('#igKpis').innerHTML=[
+      tileP('Followers',fmt(ig.followers),'ig','@'+esc(ig.username||''),'Accounts following the profile now.'),
+      tileP('Reach',fmt(ig.reach),'ig','','Different accounts that saw any post, reel, story or ad.'),
+      tileP('Views',fmt(ig.views),'ig',nonf+folv?pct(nonf,nonf+folv)+' from non-followers':'','Times your content was played or displayed.'),
+      tileP('Interactions',fmt(ig.total_interactions),'ig',`${fmt(ig.likes)} likes · ${fmt(ig.comments)} comments`,'Likes + comments + shares + saves.'),
+      tileP('Shares',fmt(ig.shares),'ig','','Times someone sent your post or reel to others.'),
+      tileP('Saves',fmt(ig.saves),'ig','','Times someone saved your post to look at later — a strong buying signal.'),
+      tileP('Profile views',fmt(sum(daily.profile_views||[],'v')),'ig','','Times someone opened the the account profile.'),
+      tileP('Accounts engaged',fmt(sum(daily.accounts_engaged||[],'v')),'ig','','Different accounts that liked, commented, shared or saved.'),
+      tileP('Posts',fmt(posts.length),'ig',`${rangeLbl()} · ${fmt(ig.media_count)} total`,'Posts and reels published in the period.'),
+      tileP('Comments',fmt(igUnr),'',igUnr?'<span class="err">waiting for a reply</span>':'all replied','Customer comments on Instagram posts nobody has replied to.'),
+      tileP('DMs',fmt(igWait),'',igWait?'<span class="err">waiting for a reply</span>':'all replied','Instagram conversations where the customer wrote last.'),
+    ].join('');
+    renderChart('#igC1',IG_REACH,v=>fmt(v),'g');
+    renderChart('#igC2',daily.views||[],v=>fmt(v),'g');
+    renderChart('#igC3',daily.total_interactions||[],v=>fmt(v),'g');
+    renderChart('#igC4',daily.profile_views||[],v=>fmt(v),'g');
+    const TN={REEL:'Reels',POST:'Feed posts',CAROUSEL_CONTAINER:'Carousels',STORY:'Stories',AD:'Ads',IGTV:'Video'};
+    const tv=bd(byType,'views'), tr=bd(byType,'reach'), ti=bd(byType,'total_interactions'); const keys=[...new Set([...tv,...tr,...ti].map(x=>x.k))];
+    const get=(arr,k)=>(arr.find(x=>x.k===k)||{}).v||0;
+    $('#igType').innerHTML=keys.length?'<div class="scroll"><table><thead><tr><th>Type</th><th class="n">Views</th><th class="n">Reach</th><th class="n">Interactions</th></tr></thead><tbody>'+keys.sort((a,b)=>get(tv,b)-get(tv,a)).map(k=>`<tr><td>${TN[k]||k}</td><td class="n">${fmt(get(tv,k))} <span class="hint">${pct(get(tv,k),ig.views)}</span></td><td class="n">${fmt(get(tr,k))}</td><td class="n">${fmt(get(ti,k))}</td></tr>`).join('')+'</tbody></table></div>':'<span class="hint">No data for this range.</span>';
+    const fr=bd(byFollow,'reach');
+    const frn=(fr.find(x=>x.k==='NON_FOLLOWER')||{}).v||0, frf=(fr.find(x=>x.k==='FOLLOWER')||{}).v||0;
+    renderBars('#igFollow',[{l:'Views · non-followers',v:nonf,sub:pct(nonf,nonf+folv)},{l:'Views · followers',v:folv,sub:pct(folv,nonf+folv)},{l:'Reach · non-followers',v:frn,sub:pct(frn,frn+frf)},{l:'Reach · followers',v:frf,sub:pct(frf,frn+frf)}],'ig');
+    renderIgPosts();
+  }
+
+  // ---- TikTok tab (Postiz snapshots -> local history) ----
+  const TT_LS='em_hub_tt_hist_v1'; let TT_HIST={}; try{ TT_HIST=JSON.parse(localStorage.getItem(TT_LS)||'{}')||{}; }catch(e){}
+  function ttSnapshot(s){ if(s.followers==null) return; TT_HIST[ymd(new Date())]=s; const keys=Object.keys(TT_HIST).sort().slice(-400); TT_HIST=Object.fromEntries(keys.map(k=>[k,TT_HIST[k]])); try{ localStorage.setItem(TT_LS,JSON.stringify(TT_HIST)); }catch(e){} }
+  function renderTtTab(s){
+    if(!s){ $('#ttKpis').innerHTML='<div class="tile"><div class="k">TikTok</div><div class="d">TikTok is not connected in Postiz, or Postiz is offline.</div></div>'; ['#ttC1','#ttC2','#ttC3','#ttC4'].forEach(x=>$(x).innerHTML='<span class="hint">No data.</span>'); $('#ttDelta').innerHTML=''; return; }
+    const from=ymd(new Date(startMs())), toK=ymd(new Date(endMs())); const keys=Object.keys(TT_HIST).filter(k=>k>=from&&k<=toK).sort(); const first=TT_HIST[keys[0]]||s;
+    const d=k=>s[k]!=null&&first[k]!=null?s[k]-first[k]:null, dd=k=>{ const v=d(k); return v==null||!keys.length||keys.length<2?'':(v>=0?'+':'')+fmt(v)+' since '+keys[0].slice(5).replace('-','/'); };
+    $('#ttKpis').innerHTML=[
+      tileP('Followers',fmt(s.followers),'tt',dd('followers'),'Followers of the account now.'),
+      tileP('Following',fmt(s.following),'tt','','Accounts the account follows.'),
+      tileP('Total likes',fmt(s.likes),'tt',dd('likes'),'Likes across all videos, ever.'),
+      tileP('Videos',fmt(s.videos),'tt',dd('videos'),'Videos on the account.'),
+      tileP('Views · recent',fmt(s.views),'tt',dd('views'),'Views on the latest videos TikTok reports to Postiz.'),
+      tileP('Likes · recent',fmt(s.rlikes),'tt','','Likes on the latest videos.'),
+      tileP('Comments · recent',fmt(s.rcomments),'tt','','Comments on the latest videos — reply in the TikTok app.'),
+      tileP('Shares · recent',fmt(s.rshares),'tt','','Shares of the latest videos.'),
+    ].join('');
+    const series=k=>keys.map(x=>({x,v:+TT_HIST[x][k]||0}));
+    const one=keys.length<2?'<span class="hint">Trend starts building from today — the hub saves one TikTok snapshot per day it is opened. Come back tomorrow to see the line.</span>':'';
+    [['#ttC1','followers'],['#ttC2','views'],['#ttC3','likes'],['#ttC4','videos']].forEach(([sel,k])=>{ if(one) $(sel).innerHTML=one; else renderChart(sel,series(k),v=>fmt(v),''); });
+    renderBars('#ttDelta',[{l:'Followers',v:d('followers'),sub:'gained'},{l:'Total likes',v:d('likes'),sub:'gained'},{l:'Videos',v:d('videos'),sub:'posted'},{l:'Views · recent',v:d('views'),sub:'more'}].map(r=>({...r,v:r.v==null?null:Math.max(0,r.v)})),'tt');
+    if(keys.length<2) $('#ttDelta').innerHTML='<span class="hint">Snapshots: '+keys.length+' — differences appear from the second day.</span>';
+    const tt=PZ_POSTS.filter(p=>(p.integration||{}).providerIdentifier==='tiktok'&&new Date(p.publishDate)<=new Date()).sort((a,b)=>new Date(b.publishDate)-new Date(a.publishDate)).slice(0,10);
+    const strip=h=>(h||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    $('#ttPostsTitle').textContent=tt.length?`${tt.length} recent`:'';
+    $('#ttPosts').innerHTML=tt.map(p=>{ const st=p.state||''; const cls=st==='PUBLISHED'?'ok':(st==='ERROR'?'err':''); return `<div class="post"><span class="pf tt" style="margin-top:3px">TT</span><div><div class="t">${new Date(p.publishDate).toLocaleString('en-MY',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><div class="c">${esc(strip(p.content))||'(media only)'}</div></div><a class="pill ${cls}" href="${esc(p.releaseURL||cfg.pzUrl+'/launches')}" target="_blank" rel="noopener">${st.toLowerCase()||'scheduled'}</a></div>`; }).join('')||'<span class="hint">No TikTok posts sent through Postiz in this range.</span>';
+  }
+
+  // ---- Ads tab ----
+  const act=(actions,k)=>{ const f=(actions||[]).find(x=>x.action_type===k); return f?+f.value:0; };
+  const PLACE={feed:'Feed',facebook_reels:'Facebook Reels',facebook_stories:'Facebook Stories',instagram_reels:'Instagram Reels',instagram_stories:'Instagram Stories',instagram_explore:'Instagram Explore',instream_video:'In-stream video',marketplace:'Marketplace',search:'Search',video_feeds:'Video feeds',facebook_profile_feed:'Profile feed',facebook_notification:'Notifications',right_hand_column:'Right column',instagram_profile_feed:'Instagram profile',an_classic:'Audience Network',rewarded_video:'Rewarded video',facebook_groups_feed:'Groups'};
+  async function loadAdsTab(){
+    if(!ADS.tot){ $('#adKpis').innerHTML='<div class="tile"><div class="k">Ads</div><div class="d">'+(fbToken?'No ad delivery in this range.':'Connect Facebook (⚙) to load ads.')+'</div></div>'; return; }
+    const {tot:t,camps,st,obj,preset,daily}=ADS, f='spend,reach,impressions,inline_link_clicks,actions';
+    const [ads,adStatus,place,demo,region]=await Promise.all([
+      gapi(`act_${cfg.acct}/insights`,{fields:'ad_id,ad_name,adset_name,campaign_id,'+f,time_range:preset,level:'ad',limit:200}).catch(e=>({data:[],err:e.message})),
+      gapi(`act_${cfg.acct}/ads`,{fields:'id,effective_status',limit:200}).catch(()=>({data:[]})),
+      gapi(`act_${cfg.acct}/insights`,{fields:f,time_range:preset,breakdowns:'publisher_platform,platform_position',limit:100}).catch(e=>({data:[],err:e.message})),
+      gapi(`act_${cfg.acct}/insights`,{fields:f,time_range:preset,breakdowns:'age,gender',limit:100}).catch(e=>({data:[],err:e.message})),
+      gapi(`act_${cfg.acct}/insights`,{fields:f,time_range:preset,breakdowns:'region',limit:100}).catch(e=>({data:[],err:e.message})),
+    ]);
+    const sp=+t.spend||0, imp=+t.impressions||0, reach=+t.reach||0, cl=+t.inline_link_clicks||0, res=camps.reduce((a,r)=>a+results(r.actions,obj[r.campaign_id]),0);
+    const A=t.actions, conn=act(A,'onsite_conversion.total_messaging_connection'), conv=act(A,'onsite_conversion.messaging_conversation_started_7d'), rep1=act(A,'onsite_conversion.messaging_first_reply'), d2=act(A,'onsite_conversion.messaging_user_depth_2_message_send'), d3=act(A,'onsite_conversion.messaging_user_depth_3_message_send'), d5=act(A,'onsite_conversion.messaging_user_depth_5_message_send'), lead=act(A,'lead'), purch=act(A,'purchase');
+    $('#adKpis').innerHTML=[
+      tileP('Spend',rm(sp),'ads',rangeLbl(),'Money Meta charged for ads in the period.'),
+      tileP('Results',fmt(res),'ads',res?rm(sp/res)+' each':'','What the campaigns are optimised for — message conversations started (or leads / purchases for those campaigns).'),
+      tileP('Link clicks',fmt(cl),'ads',cl?'CPC '+rm(sp/cl):'','Clicks on the ad link or button.'),
+      tileP('CTR',pct(cl,imp),'ads','','Link clicks ÷ impressions. Around 1% is normal; higher means the ad grabs attention.'),
+      tileP('Reach',fmt(reach),'ads',reach?'freq. '+fmt(imp/reach,1):'','Different people who saw an ad at least once; freq. = how many times each on average.'),
+      tileP('Impressions',fmt(imp),'ads',imp?'CPM '+rm(1000*sp/imp):'','Times ads were shown; CPM = cost per 1,000 shows.'),
+      tileP('Chats opened',fmt(conn),'ads',conn?rm(sp/conn)+' each':'','People who tapped the ad and opened a chat (messaging connections).'),
+      tileP('Replied by us',fmt(rep1),'ads',conv?pct(rep1,conv)+' of conversations':'','Conversations where the Page sent a first reply.'),
+      tileP('Leads (CAPI)',fmt(lead),'ads',purch?`${fmt(purch)} purchases`:'','Leads your systems reported back to Meta (Conversions API).'),
+    ].join('');
+    const dl=daily||[];
+    renderChart('#adC1',dl.map(r=>({x:r.date_start,v:+r.spend||0})),v=>rm(v),'o');
+    renderChart('#adC2',dl.map(r=>({x:r.date_start,v:results(r.actions)})),v=>fmt(v),'o');
+    renderChart('#adC3',dl.map(r=>({x:r.date_start,v:+r.inline_link_clicks||0})),v=>fmt(v),'o');
+    renderChart('#adC4',dl.map(r=>({x:r.date_start,v:+r.reach||0})),v=>fmt(v),'o');
+    renderBars('#adFunnel',[{l:'Link clicks',v:cl,sub:''},{l:'Opened a chat',v:conn,sub:pct(conn,cl)+' of clicks'},{l:'Started a conversation',v:conv,sub:pct(conv,conn)+' of chats'},{l:'Got our reply',v:rep1,sub:pct(rep1,conv)},{l:'Sent 2+ messages',v:d2,sub:pct(d2,conv)},{l:'Sent 3+ messages',v:d3,sub:pct(d3,conv)},{l:'Sent 5+ messages',v:d5,sub:pct(d5,conv)},{l:'Genuine leads (CAPI)',v:lead,sub:pct(lead,conv)}],'ads funnel');
+    const row=(r,rs)=>{ const s=+r.spend||0,i=+r.impressions||0,re=+r.reach||0,c=+r.inline_link_clicks||0; return {s,i,re,c,rs}; };
+    $('#adCamps tbody').innerHTML=camps.slice().sort((a,b)=>+b.spend-+a.spend).map(r=>{ const {s,i,re,c,rs}=row(r,results(r.actions,obj[r.campaign_id])), e=st[r.campaign_id]||'';
+      return `<tr><td>${esc(r.campaign_name)}</td><td><span class="pill ${e==='ACTIVE'?'ok':''}">${e.toLowerCase()||'—'}</span></td><td class="n">${rm(s)}</td><td class="n">${fmt(re)}</td><td class="n">${fmt(i)}</td><td class="n">${re?fmt(i/re,1):'—'}</td><td class="n">${i?rm(1000*s/i):'—'}</td><td class="n">${fmt(c)}</td><td class="n">${pct(c,i)}</td><td class="n">${c?rm(s/c):'—'}</td><td class="n">${fmt(rs)}</td><td class="n">${rs?rm(s/rs):'—'}</td></tr>`; }).join('')||'<tr><td colspan="12" class="hint">No delivery in this range.</td></tr>';
+    const ast={}; adStatus.data.forEach(a=>ast[a.id]=a.effective_status);
+    if(!ads.err) AD_META=ads.data.map(r=>({id:r.ad_id,name:r.ad_name,spend:+r.spend||0,results:results(r.actions,obj[r.campaign_id])}));
+    $('#adAds tbody').innerHTML=ads.err?`<tr><td colspan="10" class="err">${esc(ads.err)}</td></tr>`:ads.data.slice().sort((a,b)=>+b.spend-+a.spend).map(r=>{ const {s,i,re,c,rs}=row(r,results(r.actions,obj[r.campaign_id])), e=ast[r.ad_id]||'';
+      return `<tr><td>${esc(r.ad_name)}</td><td class="hint">${esc(r.adset_name)}</td><td><span class="pill ${e==='ACTIVE'?'ok':''}">${e.toLowerCase()||'—'}</span></td><td class="n">${rm(s)}</td><td class="n">${fmt(re)}</td><td class="n">${fmt(i)}</td><td class="n">${fmt(c)}</td><td class="n">${pct(c,i)}</td><td class="n">${fmt(rs)}</td><td class="n">${rs?rm(s/rs):'—'}</td></tr>`; }).join('')||'<tr><td colspan="10" class="hint">No delivery in this range.</td></tr>';
+    const keys=[...new Set(camps.map(r=>resultKey(r.actions,obj[r.campaign_id])).filter(Boolean))];
+    // Meta omits zero-value actions per row, and drops some action types entirely for certain breakdowns (messaging by region) - n/a only in the latter case
+    const bdRows=(res,label,cols)=>{ if(res.err) return `<tr><td colspan="${cols}" class="err">${esc(res.err)}</td></tr>`; const hasKey=res.data.some(r=>keys.some(k=>(r.actions||[]).some(x=>x.action_type===k))); return res.data.slice().sort((a,b)=>+b.spend-+a.spend).map(r=>{ const {s,re,c}=row(r,0), rs=hasKey?keys.reduce((a,k)=>a+act(r.actions,k),0):null; if(rs==null) return `<tr>${label(r)}<td class="n">${rm(s)}</td><td class="n">${fmt(re)}</td><td class="n">${fmt(c)}</td><td class="n"><span class="hint" data-t="Meta does not report this result type in this breakdown">n/a</span></td><td class="n">—</td></tr>`; return `<tr>${label(r)}<td class="n">${rm(s)}</td><td class="n">${fmt(re)}</td><td class="n">${fmt(c)}</td><td class="n">${fmt(rs)}</td><td class="n">${rs?rm(s/rs):'—'}</td></tr>`; }).join('')||`<tr><td colspan="${cols}" class="hint">No delivery in this range.</td></tr>`; };
+    $('#adPlace tbody').innerHTML=bdRows(place,r=>`<td><span class="pf ${r.publisher_platform==='instagram'?'ig':r.publisher_platform==='facebook'?'fb':''}">${esc(r.publisher_platform==='audience_network'?'Audience Network':r.publisher_platform)}</span> ${esc(PLACE[r.platform_position]||r.platform_position)}</td>`,6);
+    $('#adDemo tbody').innerHTML=bdRows(demo,r=>`<td>${esc(r.age)}</td><td>${r.gender==='male'?'Men':r.gender==='female'?'Women':'Unknown'}</td>`,7);
+    $('#adRegion tbody').innerHTML=bdRows(region,r=>`<td>${esc(r.region||'Unknown')}</td>`,6);
+  }
+
+  const svgDefs='<defs><linearGradient id="gradBlue" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2a78d6" stop-opacity=".35"/><stop offset="1" stop-color="#2a78d6" stop-opacity="0"/></linearGradient><linearGradient id="gradGreen" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1baf7a" stop-opacity=".35"/><stop offset="1" stop-color="#1baf7a" stop-opacity="0"/></linearGradient><linearGradient id="gradOrange" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#eb6834" stop-opacity=".35"/><stop offset="1" stop-color="#eb6834" stop-opacity="0"/></linearGradient></defs>';
+  function niceMax(m){ if(m<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(m))); const f=m/p; const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10; return n*p; }
+  function renderChart(sel,rows,fmtV,color){
+    const el=$(sel); if(!rows.length){ el.innerHTML='<span class="hint">No data for this range.</span>'; return; }
+    const W=560,H=230,L=48,R=16,T=18,B=30, c=color||'';
+    const vals=rows.map(r=>r.v), stepY=niceMax(Math.max(...vals)*1.05/4), max=stepY*4, n=rows.length;
+    const x=i=>n===1?(L+W-R)/2:L+i*(W-L-R)/(n-1), y=v=>T+(H-T-B)*(1-v/max);
+    const total=vals.reduce((a,b)=>a+b,0), avg=total/n, peak=Math.max(...vals), peakI=vals.indexOf(peak);
+    let d='M'+x(0)+','+y(vals[0]); for(let i=1;i<n;i++){ const x0=x(i-1),x1=x(i),cx=(x0+x1)/2; d+=` C${cx},${y(vals[i-1])} ${cx},${y(vals[i])} ${x1},${y(vals[i])}`; }
+    const area=d+` L${x(n-1)},${y(0)} L${x(0)},${y(0)} Z`;
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img">${svgDefs}`;
+    [0,1,2,3,4].forEach(k=>{const v=stepY*k; svg+=`<line class="gridline" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="lbl" x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v,v!==Math.floor(v)?1:0)}</text>`});
+    svg+=`<line class="axis" x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}"/>`;
+    const step=Math.max(1,Math.ceil(n/7));
+    rows.forEach((r,i)=>{ if(i%step===0||i===n-1) svg+=`<text class="lbl" x="${x(i)}" y="${H-10}" text-anchor="middle">${r.x.slice(5).replace('-','/')}</text>`; });
+    svg+=`<path class="area ${c}" d="${area}"/><path class="line ${c}" d="${d}"/>`;
+    svg+=`<circle class="pt ${c}" cx="${x(peakI)}" cy="${y(peak)}" r="4"/><text class="lastv" x="${x(peakI)}" y="${y(peak)-9}" text-anchor="middle">${fmtV(peak)}</text>`;
+    svg+=`<g class="hov" style="display:none"><line class="xhair" y1="${T}" y2="${y(0)}"/><circle class="pt ${c}" r="5"/></g>`;
+    rows.forEach((r,i)=>{ const x0=i===0?L:(x(i-1)+x(i))/2, x1=i===n-1?W-R:(x(i)+x(i+1))/2; svg+=`<rect x="${x0}" y="${T}" width="${x1-x0}" height="${H-T-B}" fill="transparent" data-i="${i}" data-t="${r.x}: ${fmtV(r.v)}"/>`; });
+    svg+='</svg>';
+    el.className='chart'; el.innerHTML=`<div class="sum"><span>Total <b>${fmtV(total)}</b></span><span>Daily avg <b>${fmtV(Math.round(avg*100)/100)}</b></span><span>Peak <b>${rows[peakI].x.slice(5).replace('-','/')}</b></span></div>`+svg;
+    const hov=el.querySelector('.hov'), hl=hov.querySelector('line'), hc=hov.querySelector('circle');
+    el.querySelectorAll('rect[data-i]').forEach(rc=>{ rc.addEventListener('mouseenter',()=>{ const i=+rc.dataset.i; hov.style.display=''; hl.setAttribute('x1',x(i)); hl.setAttribute('x2',x(i)); hc.setAttribute('cx',x(i)); hc.setAttribute('cy',y(vals[i])); }); });
+    el.querySelector('svg').addEventListener('mouseleave',()=>hov.style.display='none');
+  }
+
+  const info=t=>t?`<button class="info" type="button" data-tip="${t.replace(/"/g,'&quot;')}" aria-label="What is this?">!</button>`:'';
+  const NOTES={
+    'Ad spend':'Money Meta charged for ads in this period.',
+    'Messages':'Messenger and Instagram DM conversations where the customer wrote last - reply in the Messages inbox below.',
+    'Ad results':'Actions the ads are optimised for - message conversations started.',
+    'Link clicks':'Clicks on the ad link/button; CPC = spend / clicks.',
+    'Ad reach':'Different people who saw an ad at least once.',
+    'FB followers':'People following the Page; small number = new follows in the period.',
+    'FB engagements':'Reactions, comments, shares and clicks on Page posts.',
+    'IG followers':'Accounts following the Instagram profile.',
+    'IG reach':'Different accounts that saw any post, reel or story.',
+    'IG interactions':'Likes + comments + shares + saves on your content.',
+    'Scheduled':'Posts waiting in the Postiz calendar to go out.',
+    'TikTok followers':'Followers of the account; small line = views and likes on the latest videos.',
+    'Comments':'Customer comments on posts in the period that nobody has replied to yet (ignored ones are not counted).',
+  };
+  function tile(k,v,cls,d){ return `<div class="tile"><div class="k"><span class="dot ${cls}"></span>${k} ${info(NOTES[k])}</div><div class="v">${v}</div>${d?`<div class="d">${d}</div>`:''}</div>`; }
+
+  // Each range change starts a new load; an older one that finishes late must not overwrite the newer numbers,
+  // and the tiles are dimmed until this range's numbers are in (they were showing the previous range meanwhile).
+  let AD_META=null;
+
+  async function pickAccounts(){
+    const pg=await gapi('me/accounts',{fields:'id,name',limit:100}).catch(()=>({data:[]}));
+    const ac=await gapi('me/adaccounts',{fields:'account_id,name',limit:100}).catch(()=>({data:[]}));
+    const pages=pg.data||[], accts=ac.data||[];
+    if(!pages.some(p=>p.id===cfg.page)) cfg.page=pages[0]?pages[0].id:'';
+    if(cfg.acct&&!accts.some(a=>a.account_id===cfg.acct)&&accts.length) cfg.acct='';
+    if(!cfg.acct&&accts[0]) cfg.acct=accts[0].account_id;
+    FB_PAGE_ID=cfg.page; saveCfg();
+    $('#pageSel').innerHTML=pages.length?pages.map(p=>`<option value="${p.id}"${p.id===cfg.page?' selected':''}>${esc(p.name)}</option>`).join(''):'<option value="">No Facebook Page on this login</option>';
+    $('#acct').innerHTML=accts.length?accts.map(a=>`<option value="${a.account_id}"${a.account_id===cfg.acct?' selected':''}>${esc(a.name||a.account_id)} (${a.account_id})</option>`).join(''):'<option value="">No ad account on this login</option>';
+    if(!pages.length) throw new Error('this Facebook login cannot see any Page — log in with an account that manages the Page');
+  }
+  let LOAD_GEN=0;
+  async function loadAll(){
+    const gen=++LOAD_GEN; $('#kpis').style.opacity='.35';
+    setStatus(`Loading ${rangeLbl()}…`);
+    const out=[]; let pzInfo={}, ads=null, fb=null; const errs=[]; ADS={}; FB_M={}; IG_REACH=[]; IG_TOT={}; AD_META=null;
+    if(POSTIZ_ON) try{ pzInfo=await loadPostiz(); }catch(e){ const m=/Failed to fetch/.test(e.message)?'Postiz is offline — start the tunnel on the office PC (start-tunnel.cmd), then press ↻':e.message; errs.push(m); $('#upcoming').innerHTML='<span class="err">'+m+'</span>'; $('#recent').innerHTML=''; $('#channels').innerHTML='<span class="err">'+m+'</span>'; }
+    if(fbToken){
+      try{ await pickAccounts(); }catch(e){ errs.push(e.message); }
+      if(cfg.acct) try{ ads=await loadAds(); }catch(e){ errs.push('Ads: '+e.message); }
+      try{ fb=await loadFacebook(); }catch(e){ errs.push('Facebook: '+e.message); }
+      if(PTOK){ try{ const {fbRows,igRows}=await loadPosts(); await loadComments(fbRows,igRows); }catch(e){ errs.push('Posts: '+e.message); } try{ await loadMessages(); }catch(e){ $('#msgNote').textContent=e.message; } }
+    } else { ['#cSpend','#cFb','#cIg','#fbC1','#fbC2','#fbC3','#fbC4','#igC1','#igC2','#igC3','#igC4','#adC1','#adC2','#adC3','#adC4'].forEach(s=>$(s).innerHTML='<span class="hint">Connect Facebook (⚙) to load Meta data.</span>'); $('#camps tbody').innerHTML=''; $('#posts tbody').innerHTML='<tr><td colspan="9" class="hint">Connect Facebook (⚙) to see post analytics.</td></tr>'; $('#comments').innerHTML='<span class="hint">Connect Facebook (⚙) to see comments.</span>'; }
+    let tt=null; if(POSTIZ_ON) try{ tt=await loadTikTok(pzInfo.ints); }catch(e){ $('#tiktok').innerHTML='<span class="err">'+esc(e.message)+'</span>'; }
+    if(ads){ out.push(tile('Ad spend',rm(ads.spend),'ads',''), tile('Ad results',fmt(ads.results),'ads',ads.results?rm(ads.spend/ads.results)+' each':''), tile('Link clicks',fmt(ads.clicks),'ads',ads.clicks?'CPC '+rm(ads.spend/ads.clicks):''), tile('Ad reach',fmt(ads.reach),'ads','')); }
+    if(fb){ out.push(tile('FB followers',fmt(fb.followers),'fb',`+${fmt(fb.follows)} · ${rangeLbl()}`), tile('FB engagements',fmt(fb.engagements),'fb',`${fmt(fb.video)} video views`));
+      if(fb.ig.username) out.push(tile('IG followers',fmt(fb.ig.followers),'ig','@'+fb.ig.username), tile('IG reach',fmt(fb.ig.reach),'ig',`${fmt(fb.ig.views)} views`), tile('IG interactions',fmt(fb.ig.total_interactions),'ig',`${fmt(fb.ig.likes)} likes · ${fmt(fb.ig.saves)} saves`)); }
+    if(tt&&tt.followers!=null) out.push(tile('TikTok followers',fmt(tt.followers),'tt',`${fmt(tt.views)} views · ${fmt(tt.rlikes)} likes`));
+    if(fb&&COMMENTS.length) { const u=COMMENTS.filter(c=>!replied(c)).length; out.push(tile('Comments',fmt(u),'',u?'<span class="err">waiting for a reply</span>':'all replied')); }
+    if(fb&&THREADS.length) { const w=liveThreads().filter(needsReply).length; out.push(tile('Messages',fmt(w),'',w?'<span class="err">waiting for a reply</span>':'all replied')); }
+    if(pzInfo.scheduled!=null) out.push(tile('Scheduled',fmt(pzInfo.scheduled),'',`${fmt(pzInfo.published)} published · ${pzInfo.errors?`<span class="err">${pzInfo.errors} failed</span>`:'0 failed'}`));
+    if(gen!==LOAD_GEN) return;   // a newer range was picked while this one was loading
+    $('#kpis').style.opacity=''; $('#kpis').innerHTML=out.join('')||'<div class="tile"><div class="k">Set up</div><div class="d">Open ⚙ to connect '+(POSTIZ_ON?'Postiz and ':'')+'Facebook.</div></div>';
+    setStatus((fbToken?'Meta connected':'Meta not connected — click ⚙ then Connect Facebook')+(!POSTIZ_ON?'':cfg.pzKey?(errs.some(e=>/Postiz/.test(e))?'':' · Postiz connected'):' · Postiz key missing (⚙)')+(errs.length?' · '+errs.join(' · '):''));
+    $('#foot').textContent='Updated '+new Date().toLocaleTimeString()+' · data from Meta Graph API'+(POSTIZ_ON?' and your Postiz server':'');
+    if((POSTIZ_ON&&!cfg.pzKey)||!fbToken) $('#setup').hidden=false;
+    // platform tabs: built from what the overview already fetched, plus their own extra calls (errors stay inside each tab)
+    try{ if(fb) renderFbTab(fb); else $('#fbKpis').innerHTML='<div class="tile"><div class="k">Facebook</div><div class="d">'+(fbToken?'Facebook data did not load — see the status line above.':'Connect Facebook (⚙) to load this tab.')+'</div></div>'; }catch(e){ $('#fbKpis').innerHTML='<div class="tile"><div class="k">Facebook</div><div class="d err">'+esc(e.message)+'</div></div>'; }
+    if(POSTIZ_ON) try{ renderTtTab(tt); }catch(e){ $('#ttKpis').innerHTML='<div class="tile"><div class="k">TikTok</div><div class="d err">'+esc(e.message)+'</div></div>'; }
+    await Promise.all([
+      loadIgTab().catch(e=>{ $('#igKpis').innerHTML='<div class="tile"><div class="k">Instagram</div><div class="d err">'+esc(e.message)+'</div></div>'; }),
+      loadAdsTab().catch(e=>{ $('#adKpis').innerHTML='<div class="tile"><div class="k">Ads</div><div class="d err">'+esc(e.message)+'</div></div>'; }),
+    ]);
+    renderComments(); renderMessages();
+  }
+  loadAll();
+})();
+</script>
+</body>
+</html>
